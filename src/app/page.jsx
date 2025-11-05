@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { ref, onValue, push, set } from "firebase/database";
 import { auth, db } from "@/lib/firebase";
 import { Toaster, toast } from "react-hot-toast";
-import { FaPhone, FaVideo, FaEllipsisV } from "react-icons/fa";
+import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft } from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
 import MediaModal from "@/components/MediaModal";
@@ -24,8 +24,27 @@ export default function ChatUI() {
     const [uploading, setUploading] = useState(false);
     const [modalContent, setModalContent] = useState(null);
     const [modalType, setModalType] = useState(null); // 'image' | 'video'
+    const [isMobileView, setIsMobileView] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(true);
 
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            const mobile = window.innerWidth <= 768;
+            setIsMobileView(mobile);
+            if (mobile && activeUser) {
+                setShowSidebar(false);
+            } else {
+                setShowSidebar(true);
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, [activeUser]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -278,7 +297,7 @@ export default function ChatUI() {
         try {
             const groupId = `${groupName}_${Date.now()}`;
             const groupRef = ref(db, `groupChats/${groupId}`);
-            
+
             // Create initial group data with messages subnode
             await set(groupRef, {
                 groupName,
@@ -295,6 +314,19 @@ export default function ChatUI() {
             toast.error('Failed to create group');
             return null;
         }
+    };
+
+    const handleUserSelect = (user, type = 'individual') => {
+        setActiveUser(user);
+        setActiveChatType(type);
+        if (isMobileView) {
+            setShowSidebar(false);
+        }
+    };
+
+    const handleBackToSidebar = () => {
+        setShowSidebar(true);
+        setActiveUser("");
     };
 
     if (authChecking) {
@@ -335,35 +367,46 @@ export default function ChatUI() {
                 disabled={uploading || !activeUser}
             />
 
-            <Sidebar 
-                activeUser={activeUser} 
-                setActiveUser={setActiveUser} 
-                setUsers={setUsers} 
-                username={username} 
-                users={users}
-                groups={groups}
-                activeChatType={activeChatType}
-                setActiveChatType={setActiveChatType}
-                onCreateGroup={createGroupChat}
-            />
+            {/* Sidebar - Conditionally rendered based on mobile view */}
+            <div className={`${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-1/4'}`}>
+                <Sidebar
+                    activeUser={activeUser}
+                    setActiveUser={handleUserSelect}
+                    setUsers={setUsers}
+                    username={username}
+                    users={users}
+                    groups={groups}
+                    activeChatType={activeChatType}
+                    setActiveChatType={setActiveChatType}
+                    onCreateGroup={createGroupChat}
+                />
+            </div>
 
-            <div className="flex-1 flex flex-col bg-[#0b141a]">
-                {/* Chat Header */}
+            {/* Chat Area - Conditionally rendered based on mobile view */}
+            <div className={`${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col bg-[#0b141a]`}>
+                {/* Chat Header with Back Button for Mobile */}
                 {activeUser ? (
                     <div className="flex items-center justify-between p-3 bg-[#202c33] border-b border-[#374248]">
                         <div className="flex items-center gap-3">
+                            {isMobileView && (
+                                <button
+                                    onClick={handleBackToSidebar}
+                                    className="p-2 text-gray-300 hover:text-white transition-colors"
+                                >
+                                    <FaArrowLeft size={18} />
+                                </button>
+                            )}
                             <div className="relative">
-                                <div className={`w-10 h-10 rounded-full flex justify-center items-center text-white font-semibold ${
-                                    activeChatType === 'group' ? 'bg-purple-600' : 'bg-[#00a884]'
-                                }`}>
+                                <div className={`w-10 h-10 rounded-full flex justify-center items-center text-white font-semibold ${activeChatType === 'group' ? 'bg-purple-600' : 'bg-[#00a884]'
+                                    }`}>
                                     {activeChatType === 'group' ? '👥' : activeUser.slice(0, 1).toUpperCase()}
                                 </div>
                                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-[#202c33]"></div>
                             </div>
                             <div>
                                 <h2 className="font-semibold text-white">
-                                    {activeChatType === 'group' ? 
-                                        groups.find(g => g.id === activeUser)?.name || activeUser.split('_')[0] 
+                                    {activeChatType === 'group' ?
+                                        groups.find(g => g.id === activeUser)?.name || activeUser.split('_')[0]
                                         : activeUser
                                     }
                                 </h2>

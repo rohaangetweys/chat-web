@@ -37,13 +37,11 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
   }
 
   const handleUserClick = (user) => {
-    setActiveUser(user);
-    setActiveChatType('individual');
+    setActiveUser(user, 'individual');
   };
 
   const handleGroupClick = (groupId) => {
-    setActiveUser(groupId);
-    setActiveChatType('group');
+    setActiveUser(groupId, 'group');
   };
 
   const openGroupModal = () => {
@@ -116,7 +114,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
   return (
     <>
-      <div className="w-1/4 bg-[#202c33] border-r border-[#374248] flex flex-col h-screen">
+      <div className="w-full bg-[#202c33] border-r border-[#374248] flex flex-col h-screen">
         {/* User Header */}
         <div className="p-3 bg-[#202c33] flex items-center gap-3 border-b border-[#374248]">
           <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold">

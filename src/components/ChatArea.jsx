@@ -123,7 +123,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                         chat.map((msg, i) => (
                             <div
                                 key={i}
-                                className={`max-w-[70%] h-auto p-3 rounded-lg ${msg.username === username
+                                className={`max-w-[85%] md:max-w-[70%] h-auto p-3 rounded-lg ${msg.username === username
                                     ? "ml-auto bg-[#005c4b] text-white"
                                     : "mr-auto bg-[#2a3942] text-white"
                                     }`}
