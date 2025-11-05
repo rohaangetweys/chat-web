@@ -28,7 +28,6 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                     : `${activeUser}_${username}`;
             chatRef = ref(db, `chats/${chatId}`);
         } else {
-            // Group chat - push to messages subnode
             chatRef = ref(db, `groupChats/${activeUser}/messages`);
         }
 
@@ -132,7 +131,6 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
         const formatDuration = (seconds) => {
             if (!seconds && seconds !== 0) return '0:00';
 
-            // Round to nearest whole number
             const totalSeconds = Math.round(seconds);
             const mins = Math.floor(totalSeconds / 60);
             const secs = totalSeconds % 60;
@@ -147,13 +145,11 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                     audioRef.current.pause();
                     setIsPlaying(false);
                 } else {
-                    // Stop any currently playing audio
                     const allAudioElements = document.querySelectorAll('audio');
                     allAudioElements.forEach(audio => {
                         if (audio !== audioRef.current) {
                             audio.pause();
                             audio.currentTime = 0;
-                            // Also update the state for other players if needed
                             const event = new Event('pause');
                             audio.dispatchEvent(event);
                         }

@@ -17,12 +17,10 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
         setDuration(0);
         audioChunksRef.current = [];
 
-        // Start duration timer
         durationIntervalRef.current = setInterval(() => {
             setDuration(prev => prev + 1);
         }, 1000);
 
-        // ✅ iOS-safe mediaDevices fallback
         if (typeof navigator.mediaDevices === "undefined") {
             navigator.mediaDevices = {};
         }
@@ -47,7 +45,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
             };
         }
 
-        // 🎧 Audio recording setup
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorderRef.current = new MediaRecorder(stream);
@@ -59,7 +56,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
             mediaRecorderRef.current.onstop = () => {
                 setRecordingComplete(true);
 
-                // Stop all tracks
                 stream.getTracks().forEach(track => track.stop());
             };
 

@@ -26,7 +26,6 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
         if (e.target === e.currentTarget) onClose();
     };
 
-    // ✅ Download media (works for Cloudinary & normal URLs)
     const handleDownload = async () => {
         try {
             const fileName =

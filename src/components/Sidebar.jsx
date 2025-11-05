@@ -10,7 +10,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState('users'); // 'users' or 'groups'
+  const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredGroups, setFilteredGroups] = useState([]);
@@ -69,16 +69,14 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     if (groupId) {
       handleGroupClick(groupId);
       closeGroupModal();
-      setActiveTab('groups'); // Switch to groups tab after creation
+      setActiveTab('groups');
     }
   };
 
-  // Use useMemo to prevent unnecessary recalculations
   const availableUsers = useMemo(() => {
     return users.filter(u => u !== username);
   }, [users, username]);
 
-  // Filter users based on search query
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredUsers(availableUsers);
@@ -89,9 +87,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       );
       setFilteredUsers(filtered);
     }
-  }, [searchQuery, availableUsers]); // availableUsers is now stable due to useMemo
+  }, [searchQuery, availableUsers]);
 
-  // Filter groups based on search query
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredGroups(groups);

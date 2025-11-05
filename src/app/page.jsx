@@ -20,11 +20,11 @@ export default function ChatUI() {
     const [users, setUsers] = useState([]);
     const [groups, setGroups] = useState([]);
     const [activeUser, setActiveUser] = useState("");
-    const [activeChatType, setActiveChatType] = useState("individual"); // 'individual' or 'group'
+    const [activeChatType, setActiveChatType] = useState("individual");
     const [chat, setChat] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [modalContent, setModalContent] = useState(null);
-    const [modalType, setModalType] = useState(null); // 'image' | 'video'
+    const [modalType, setModalType] = useState(null);
     const [isMobileView, setIsMobileView] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
@@ -92,7 +92,6 @@ export default function ChatUI() {
         return () => unsub();
     }, []);
 
-    // Load groups from Firebase
     useEffect(() => {
         if (!username) return;
 
@@ -101,7 +100,6 @@ export default function ChatUI() {
             const groupsList = [];
             snapshot.forEach((child) => {
                 const groupData = child.val();
-                // Check if current user is a member of this group
                 if (groupData.members && groupData.members.includes(username)) {
                     groupsList.push({
                         id: child.key,
@@ -131,7 +129,6 @@ export default function ChatUI() {
                     : `${activeUser}_${username}`;
             chatRef = ref(db, `chats/${chatId}`);
         } else {
-            // Group chat - listen to messages subnode
             chatRef = ref(db, `groupChats/${activeUser}/messages`);
         }
 
@@ -157,7 +154,6 @@ export default function ChatUI() {
                     : `${activeUser}_${username}`;
             chatRef = ref(db, `chats/${chatId}`);
         } else {
-            // Group chat - push to messages subnode
             chatRef = ref(db, `groupChats/${activeUser}/messages`);
         }
 
@@ -165,7 +161,7 @@ export default function ChatUI() {
             await push(chatRef, {
                 username,
                 message: url,
-                type: type, // 'image' | 'video' | 'file' | 'audio'
+                type: type,
                 fileName: fileName || '',
                 format: format || '',
                 duration: duration || '',
@@ -185,7 +181,6 @@ export default function ChatUI() {
         formData.append('file', file);
         formData.append('upload_preset', 'chat_app_upload');
 
-        // Choose correct endpoint
         const isImage = file.type.startsWith('image/');
         const isVideo = file.type.startsWith('video/');
         const isAudio = file.type.startsWith('audio/');
@@ -254,7 +249,7 @@ export default function ChatUI() {
             const fileName = file.name || data.original_filename || '';
             const format = data.format || '';
 
-            let msgType = 'file'; // Default for documents
+            let msgType = 'file';
             if (data.resource_type === 'image' || file.type.startsWith('image/')) {
                 msgType = 'image';
             } else if (data.resource_type === 'video' || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
@@ -291,7 +286,6 @@ export default function ChatUI() {
         try {
             toast.loading('Uploading voice message...', { id: 'voice-upload' });
 
-            // Convert blob to file
             const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, {
                 type: 'audio/webm'
             });
@@ -336,13 +330,12 @@ export default function ChatUI() {
             const groupId = `${groupName}_${Date.now()}`;
             const groupRef = ref(db, `groupChats/${groupId}`);
 
-            // Create initial group data with messages subnode
             await set(groupRef, {
                 groupName,
                 createdBy: username,
                 createdAt: new Date().toISOString(),
                 members: [...selectedUsers, username],
-                messages: {} // Initialize empty messages node
+                messages: {}
             });
 
             toast.success(`Group "${groupName}" created successfully!`);
