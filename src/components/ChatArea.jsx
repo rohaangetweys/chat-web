@@ -183,7 +183,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                             onClick={() => handleDocumentClick(msg.message)}
                                             title="Click to open document"
                                         >
-                                            <div className="flex-shrink-0">
+                                            <div className="shrink-0">
                                                 {getFileIcon(msg.fileName, msg.format)}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -194,7 +194,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                                     {getFileTypeName(msg.fileName, msg.format)}
                                                 </p>
                                             </div>
-                                            <div className="flex-shrink-0 flex gap-1">
+                                            <div className="shrink-0 flex gap-1">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
