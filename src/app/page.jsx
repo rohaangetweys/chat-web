@@ -146,7 +146,7 @@ export default function ChatUI() {
         return () => unsub();
     }, [activeUser, username, activeChatType]);
 
-    const sendFileMessage = async ({ url, type, fileName, format, transcript, duration }) => {
+    const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
         if (!activeUser || !username) return;
 
         let chatRef;
@@ -168,7 +168,6 @@ export default function ChatUI() {
                 type: type, // 'image' | 'video' | 'file' | 'audio'
                 fileName: fileName || '',
                 format: format || '',
-                transcript: transcript || '',
                 duration: duration || '',
                 time: new Date().toLocaleTimeString([], {
                     hour: "2-digit",
@@ -282,7 +281,7 @@ export default function ChatUI() {
         }
     };
 
-    const handleVoiceRecordComplete = async (audioBlob, transcript, duration) => {
+    const handleVoiceRecordComplete = async (audioBlob, duration) => {
         if (!activeUser) {
             toast.error('Select a user to send voice message');
             return;
@@ -304,7 +303,6 @@ export default function ChatUI() {
                 type: 'audio',
                 fileName: 'Voice Message',
                 format: 'webm',
-                transcript: transcript,
                 duration: duration
             });
 

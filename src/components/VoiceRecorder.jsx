@@ -5,10 +5,8 @@ import { useEffect, useState, useRef } from "react";
 export default function VoiceRecorder({ onRecordingComplete, onClose }) {
     const [isRecording, setIsRecording] = useState(false);
     const [recordingComplete, setRecordingComplete] = useState(false);
-    const [transcript, setTranscript] = useState("");
     const [duration, setDuration] = useState(0);
 
-    const recognitionRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const durationIntervalRef = useRef(null);
@@ -16,7 +14,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
     const startRecording = async () => {
         setIsRecording(true);
         setRecordingComplete(false);
-        setTranscript("");
         setDuration(0);
         audioChunksRef.current = [];
 
@@ -24,24 +21,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
         durationIntervalRef.current = setInterval(() => {
             setDuration(prev => prev + 1);
         }, 1000);
-
-        // 🎙️ SpeechRecognition setup
-        const SpeechRecognition =
-            window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (SpeechRecognition) {
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = true;
-            recognitionRef.current.interimResults = true;
-            recognitionRef.current.lang = "en-US";
-
-            recognitionRef.current.onresult = (event) => {
-                const { transcript: newTranscript } = event.results[event.results.length - 1][0];
-                setTranscript(newTranscript);
-            };
-
-            recognitionRef.current.start();
-        }
 
         // ✅ iOS-safe mediaDevices fallback
         if (typeof navigator.mediaDevices === "undefined") {
@@ -78,7 +57,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
             };
 
             mediaRecorderRef.current.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
                 setRecordingComplete(true);
 
                 // Stop all tracks
@@ -95,9 +73,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
     };
 
     const stopRecording = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
             mediaRecorderRef.current.stop();
         }
@@ -110,7 +85,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
     const handleSendRecording = () => {
         if (audioChunksRef.current.length > 0) {
             const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-            onRecordingComplete(audioBlob, transcript, duration);
+            onRecordingComplete(audioBlob, duration);
         }
     };
 
@@ -127,7 +102,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
 
     useEffect(() => {
         return () => {
-            if (recognitionRef.current) recognitionRef.current.stop();
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
                 mediaRecorderRef.current.stop();
             }
@@ -162,12 +136,6 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                             </div>
                         )}
                     </div>
-
-                    {transcript && (
-                        <div className="border border-[#374248] rounded-md p-3 bg-[#1e2a30]">
-                            <p className="text-sm text-gray-300">{transcript}</p>
-                        </div>
-                    )}
 
                     {recordingComplete && (
                         <div className="mt-3">

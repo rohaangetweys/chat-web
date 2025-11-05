@@ -4,12 +4,13 @@ import { push, ref } from 'firebase/database';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt, FaMicrophone } from 'react-icons/fa';
+import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt, FaMicrophone, FaPause } from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
 export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder }) {
     const [message, setMessage] = useState("");
     const messagesEndRef = useRef(null);
+    const [playingAudio, setPlayingAudio] = useState(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -116,10 +117,155 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
     };
 
     const formatDuration = (seconds) => {
-        if (!seconds) return '';
+        if (!seconds) return '0:00';
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const VoiceMessagePlayer = ({ msg, index }) => {
+        const audioRef = useRef(null);
+        const [isPlaying, setIsPlaying] = useState(false);
+        const [progress, setProgress] = useState(0);
+        const [currentTime, setCurrentTime] = useState(0);
+
+        const formatDuration = (seconds) => {
+            if (!seconds && seconds !== 0) return '0:00';
+
+            // Round to nearest whole number
+            const totalSeconds = Math.round(seconds);
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        const togglePlayPause = async () => {
+            if (!audioRef.current) return;
+
+            try {
+                if (isPlaying) {
+                    audioRef.current.pause();
+                    setIsPlaying(false);
+                } else {
+                    // Stop any currently playing audio
+                    const allAudioElements = document.querySelectorAll('audio');
+                    allAudioElements.forEach(audio => {
+                        if (audio !== audioRef.current) {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            // Also update the state for other players if needed
+                            const event = new Event('pause');
+                            audio.dispatchEvent(event);
+                        }
+                    });
+
+                    await audioRef.current.play();
+                    setIsPlaying(true);
+                }
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                toast.error('Error playing voice message');
+            }
+        };
+
+        const handleTimeUpdate = () => {
+            if (audioRef.current && audioRef.current.duration) {
+                const progress = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+                setProgress(isNaN(progress) ? 0 : progress);
+                setCurrentTime(audioRef.current.currentTime);
+            }
+        };
+
+        const handleEnded = () => {
+            setIsPlaying(false);
+            setProgress(0);
+            setCurrentTime(0);
+        };
+
+        const handleLoadedMetadata = () => {
+            if (audioRef.current) {
+                setCurrentTime(0);
+            }
+        };
+
+        const handleSeek = (e) => {
+            if (!audioRef.current || !audioRef.current.duration) return;
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const seekTime = percent * audioRef.current.duration;
+
+            audioRef.current.currentTime = seekTime;
+            setProgress(percent * 100);
+        };
+
+        const handleCanPlay = () => {
+            console.log('Audio can play');
+        };
+
+        const handleError = (e) => {
+            console.error('Audio error:', e);
+            toast.error('Error loading voice message');
+        };
+
+        const isOwnMessage = msg.username === username;
+
+        return (
+            <div className="my-1 w-full max-w-xs md:max-w-sm lg:max-w-md">
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${isOwnMessage
+                        ? 'bg-[#005c4b]'
+                        : 'bg-[#2a3942]'
+                    }`}>
+                    {/* Play/Pause Button */}
+                    <button
+                        onClick={togglePlayPause}
+                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isOwnMessage
+                                ? 'bg-white text-[#005c4b] hover:bg-gray-100'
+                                : 'bg-[#00a884] text-white hover:bg-[#00b884]'
+                            }`}
+                    >
+                        {isPlaying ? <FaPause size={12} /> : <FaPlay size={12} className="ml-0.5" />}
+                    </button>
+
+                    {/* Progress Bar */}
+                    <div className="flex-1 min-w-0">
+                        <div
+                            className="relative h-1 bg-gray-600 rounded-full cursor-pointer mb-1"
+                            onClick={handleSeek}
+                        >
+                            <div
+                                className={`absolute h-full rounded-full transition-all ${isOwnMessage ? 'bg-white' : 'bg-[#00a884]'
+                                    }`}
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <span className={`text-xs ${isOwnMessage ? 'text-white' : 'text-gray-300'
+                                }`}>
+                                {formatDuration(currentTime)}
+                            </span>
+                            <span className={`text-xs ${isOwnMessage ? 'text-white' : 'text-gray-400'
+                                }`}>
+                                {formatDuration(msg.duration)}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Hidden Audio Element */}
+                    <audio
+                        ref={audioRef}
+                        src={msg.message}
+                        onTimeUpdate={handleTimeUpdate}
+                        onEnded={handleEnded}
+                        onLoadedMetadata={handleLoadedMetadata}
+                        onCanPlay={handleCanPlay}
+                        onError={handleError}
+                        preload="metadata"
+                    />
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -139,7 +285,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                         chat.map((msg, i) => (
                             <div
                                 key={i}
-                                className={`max-w-[85%] md:max-w-[70%] h-auto p-3 rounded-lg ${msg.username === username
+                                className={`max-w-[85%] md:max-w-[70%] h-auto min-w-[15%] p-3 rounded-lg ${msg.username === username
                                     ? "ml-auto bg-[#005c4b] text-white"
                                     : "mr-auto bg-[#2a3942] text-white"
                                     }`}
@@ -193,38 +339,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                         )}
                                     </div>
                                 ) : msg.type === "audio" ? (
-                                    <div className="my-1">
-                                        <div className="flex items-center gap-3 p-3 bg-[#1e2a30] rounded-lg border border-[#374248]">
-                                            <div className="shrink-0">
-                                                <div className="w-10 h-10 bg-[#00a884] rounded-full flex items-center justify-center">
-                                                    <FaMicrophone className="text-white" size={16} />
-                                                </div>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-white">
-                                                    Voice Message
-                                                </p>
-                                                {msg.duration && (
-                                                    <p className="text-xs text-gray-400">
-                                                        {formatDuration(msg.duration)}
-                                                    </p>
-                                                )}
-                                                {msg.transcript && (
-                                                    <p className="text-xs text-gray-300 mt-1 truncate">
-                                                        {msg.transcript}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="shrink-0">
-                                                <audio
-                                                    controls
-                                                    className="w-32"
-                                                >
-                                                    <source src={msg.message} type="audio/webm" />
-                                                </audio>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <VoiceMessagePlayer msg={msg} index={i} />
                                 ) : msg.type === "file" ? (
                                     <div className="my-1">
                                         <div
@@ -281,8 +396,8 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                 {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
                             </h3>
                             <p className="text-gray-400">
-                                {activeChatType === 'group' 
-                                    ? 'Send the first message in this group' 
+                                {activeChatType === 'group'
+                                    ? 'Send the first message in this group'
                                     : 'Send your first message to start the conversation'
                                 }
                             </p>
@@ -325,9 +440,9 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             placeholder={
-                                activeUser 
-                                    ? activeChatType === 'group' 
-                                        ? `Message group...` 
+                                activeUser
+                                    ? activeChatType === 'group'
+                                        ? `Message group...`
                                         : `Message ${activeUser}...`
                                     : "Select a user to start chatting"
                             }
