@@ -17,7 +17,9 @@ export default function ChatUI() {
     const [authChecking, setAuthChecking] = useState(true);
 
     const [users, setUsers] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [activeUser, setActiveUser] = useState("");
+    const [activeChatType, setActiveChatType] = useState("individual"); // 'individual' or 'group'
     const [chat, setChat] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [modalContent, setModalContent] = useState(null);
@@ -69,18 +71,49 @@ export default function ChatUI() {
         return () => unsub();
     }, []);
 
+    // Load groups from Firebase
+    useEffect(() => {
+        if (!username) return;
+
+        const groupsRef = ref(db, "groupChats/");
+        const unsub = onValue(groupsRef, (snapshot) => {
+            const groupsList = [];
+            snapshot.forEach((child) => {
+                const groupData = child.val();
+                // Check if current user is a member of this group
+                if (groupData.members && groupData.members.includes(username)) {
+                    groupsList.push({
+                        id: child.key,
+                        name: groupData.groupName,
+                        createdBy: groupData.createdBy,
+                        members: groupData.members
+                    });
+                }
+            });
+            setGroups(groupsList);
+        });
+
+        return () => unsub();
+    }, [username]);
+
     useEffect(() => {
         if (!activeUser || !username) {
             setChat([]);
             return;
         }
 
-        const chatId =
-            username < activeUser
-                ? `${username}_${activeUser}`
-                : `${activeUser}_${username}`;
+        let chatRef;
+        if (activeChatType === "individual") {
+            const chatId =
+                username < activeUser
+                    ? `${username}_${activeUser}`
+                    : `${activeUser}_${username}`;
+            chatRef = ref(db, `chats/${chatId}`);
+        } else {
+            // Group chat - listen to messages subnode
+            chatRef = ref(db, `groupChats/${activeUser}/messages`);
+        }
 
-        const chatRef = ref(db, `chats/${chatId}`);
         const unsub = onValue(chatRef, (snapshot) => {
             const msgs = [];
             snapshot.forEach((child) => {
@@ -90,17 +123,23 @@ export default function ChatUI() {
         });
 
         return () => unsub();
-    }, [activeUser, username]);
+    }, [activeUser, username, activeChatType]);
 
     const sendFileMessage = async ({ url, type, fileName, format }) => {
         if (!activeUser || !username) return;
 
-        const chatId =
-            username < activeUser
-                ? `${username}_${activeUser}`
-                : `${activeUser}_${username}`;
+        let chatRef;
+        if (activeChatType === "individual") {
+            const chatId =
+                username < activeUser
+                    ? `${username}_${activeUser}`
+                    : `${activeUser}_${username}`;
+            chatRef = ref(db, `chats/${chatId}`);
+        } else {
+            // Group chat - push to messages subnode
+            chatRef = ref(db, `groupChats/${activeUser}/messages`);
+        }
 
-        const chatRef = ref(db, `chats/${chatId}`);
         try {
             await push(chatRef, {
                 username,
@@ -230,6 +269,34 @@ export default function ChatUI() {
         setModalType(null);
     };
 
+    const createGroupChat = async (groupName, selectedUsers) => {
+        if (!groupName.trim() || selectedUsers.length === 0) {
+            toast.error('Please enter a group name and select at least one user');
+            return;
+        }
+
+        try {
+            const groupId = `${groupName}_${Date.now()}`;
+            const groupRef = ref(db, `groupChats/${groupId}`);
+            
+            // Create initial group data with messages subnode
+            await set(groupRef, {
+                groupName,
+                createdBy: username,
+                createdAt: new Date().toISOString(),
+                members: [...selectedUsers, username],
+                messages: {} // Initialize empty messages node
+            });
+
+            toast.success(`Group "${groupName}" created successfully!`);
+            return groupId;
+        } catch (error) {
+            console.error('Error creating group:', error);
+            toast.error('Failed to create group');
+            return null;
+        }
+    };
+
     if (authChecking) {
         return (
             <div className="h-screen flex items-center justify-center bg-[#111b21]">
@@ -268,7 +335,17 @@ export default function ChatUI() {
                 disabled={uploading || !activeUser}
             />
 
-            <Sidebar activeUser={activeUser} setActiveUser={setActiveUser} setUsers={setUsers} username={username} users={users} />
+            <Sidebar 
+                activeUser={activeUser} 
+                setActiveUser={setActiveUser} 
+                setUsers={setUsers} 
+                username={username} 
+                users={users}
+                groups={groups}
+                activeChatType={activeChatType}
+                setActiveChatType={setActiveChatType}
+                onCreateGroup={createGroupChat}
+            />
 
             <div className="flex-1 flex flex-col bg-[#0b141a]">
                 {/* Chat Header */}
@@ -276,14 +353,23 @@ export default function ChatUI() {
                     <div className="flex items-center justify-between p-3 bg-[#202c33] border-b border-[#374248]">
                         <div className="flex items-center gap-3">
                             <div className="relative">
-                                <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold">
-                                    {activeUser.slice(0, 1).toUpperCase()}
+                                <div className={`w-10 h-10 rounded-full flex justify-center items-center text-white font-semibold ${
+                                    activeChatType === 'group' ? 'bg-purple-600' : 'bg-[#00a884]'
+                                }`}>
+                                    {activeChatType === 'group' ? '👥' : activeUser.slice(0, 1).toUpperCase()}
                                 </div>
                                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-[#202c33]"></div>
                             </div>
                             <div>
-                                <h2 className="font-semibold text-white">{activeUser}</h2>
-                                <p className="text-xs text-gray-400">Online</p>
+                                <h2 className="font-semibold text-white">
+                                    {activeChatType === 'group' ? 
+                                        groups.find(g => g.id === activeUser)?.name || activeUser.split('_')[0] 
+                                        : activeUser
+                                    }
+                                </h2>
+                                <p className="text-xs text-gray-400">
+                                    {activeChatType === 'group' ? 'Group' : 'Online'}
+                                </p>
                             </div>
                         </div>
 
@@ -314,6 +400,7 @@ export default function ChatUI() {
                     uploading={uploading}
                     username={username}
                     onOpenMedia={openMediaModal}
+                    activeChatType={activeChatType}
                 />
 
                 {/* Media Modal */}

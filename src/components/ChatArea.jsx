@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt } from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
-export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia }) {
+export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType }) {
     const [message, setMessage] = useState("");
     const messagesEndRef = useRef(null);
 
@@ -19,12 +19,18 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
         e?.preventDefault();
         if (!message.trim() || !activeUser || !username) return;
 
-        const chatId =
-            username < activeUser
-                ? `${username}_${activeUser}`
-                : `${activeUser}_${username}`;
+        let chatRef;
+        if (activeChatType === "individual") {
+            const chatId =
+                username < activeUser
+                    ? `${username}_${activeUser}`
+                    : `${activeUser}_${username}`;
+            chatRef = ref(db, `chats/${chatId}`);
+        } else {
+            // Group chat - push to messages subnode
+            chatRef = ref(db, `groupChats/${activeUser}/messages`);
+        }
 
-        const chatRef = ref(db, `chats/${chatId}`);
         try {
             await push(chatRef, {
                 username,
@@ -122,7 +128,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                     : "mr-auto bg-[#2a3942] text-white"
                                     }`}
                             >
-                                {msg.username !== username && (
+                                {(msg.username !== username || activeChatType === 'group') && (
                                     <p className="text-xs text-[#00a884] font-medium mb-1">
                                         {msg.username}
                                     </p>
@@ -222,8 +228,15 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                             <div className="w-20 h-20 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
                                 <span className="text-2xl">👋</span>
                             </div>
-                            <h3 className="text-lg font-light text-gray-300 mb-2">Say hello!</h3>
-                            <p className="text-gray-400">Send your first message to start the conversation</p>
+                            <h3 className="text-lg font-light text-gray-300 mb-2">
+                                {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
+                            </h3>
+                            <p className="text-gray-400">
+                                {activeChatType === 'group' 
+                                    ? 'Send the first message in this group' 
+                                    : 'Send your first message to start the conversation'
+                                }
+                            </p>
                         </div>
                     )}
                     <div ref={messagesEndRef} />
@@ -251,7 +264,11 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             placeholder={
-                                activeUser ? `Message ${activeUser}...` : "Select a user to start chatting"
+                                activeUser 
+                                    ? activeChatType === 'group' 
+                                        ? `Message group...` 
+                                        : `Message ${activeUser}...`
+                                    : "Select a user to start chatting"
                             }
                             className="w-full p-3 px-4 rounded-lg bg-[#2a3942] text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#00a884] border-none"
                             onKeyDown={(e) => {
