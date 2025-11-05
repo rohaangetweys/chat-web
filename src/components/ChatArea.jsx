@@ -4,292 +4,537 @@ import { push, ref } from 'firebase/database';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt } from 'react-icons/fa';
+import {
+  FaPaperPlane,
+  FaFilePdf,
+  FaFileWord,
+  FaFileArchive,
+  FaFile,
+  FaDownload,
+  FaPlay,
+  FaExternalLinkAlt,
+  FaMicrophone,
+  FaStop
+} from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
-export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType }) {
-    const [message, setMessage] = useState("");
-    const messagesEndRef = useRef(null);
+export default function ChatArea({
+  activeUser,
+  chat,
+  username,
+  uploading,
+  fileInputRef,
+  onOpenMedia,
+  activeChatType,
+  sendFileMessage, // passed from page.jsx
+  uploadToCloudinary, // passed from page.jsx
+}) {
+  const [message, setMessage] = useState("");
+  const messagesEndRef = useRef(null);
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [chat]);
+  // --- Recorder states & refs
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingComplete, setRecordingComplete] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [audioURL, setAudioURL] = useState(null);
+  const [audioUploading, setAudioUploading] = useState(false);
 
-    const sendMessage = async (e) => {
-        e?.preventDefault();
-        if (!message.trim() || !activeUser || !username) return;
+  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
-        let chatRef;
-        if (activeChatType === "individual") {
-            const chatId =
-                username < activeUser
-                    ? `${username}_${activeUser}`
-                    : `${activeUser}_${username}`;
-            chatRef = ref(db, `chats/${chatId}`);
-        } else {
-            // Group chat - push to messages subnode
-            chatRef = ref(db, `groupChats/${activeUser}/messages`);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chat]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        if (recognitionRef.current) recognitionRef.current.stop();
+      } catch (e) {}
+      try {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+          mediaRecorderRef.current.stop();
         }
-
-        try {
-            await push(chatRef, {
-                username,
-                message: message.trim(),
-                type: "text",
-                time: new Date().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-            });
-            setMessage("");
-        } catch (err) {
-            console.error("sendMessage error:", err);
-            toast.error("Failed to send message");
-        }
+      } catch (e) {}
     };
+  }, []);
 
-    const handlePaperClipClick = () => {
-        if (!activeUser) {
-            toast.error('Please select a user to chat with');
-            return;
-        }
-        fileInputRef.current?.click();
+  const sendMessage = async (e) => {
+    e?.preventDefault();
+    if (!message.trim() || !activeUser || !username) return;
+
+    let chatRef;
+    if (activeChatType === "individual") {
+      const chatId =
+        username < activeUser
+          ? `${username}_${activeUser}`
+          : `${activeUser}_${username}`;
+      chatRef = ref(db, `chats/${chatId}`);
+    } else {
+      // Group chat - push to messages subnode
+      chatRef = ref(db, `groupChats/${activeUser}/messages`);
+    }
+
+    try {
+      await push(chatRef, {
+        username,
+        message: message.trim(),
+        type: "text",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      });
+      setMessage("");
+    } catch (err) {
+      console.error("sendMessage error:", err);
+      toast.error("Failed to send message");
+    }
+  };
+
+  const handlePaperClipClick = () => {
+    if (!activeUser) {
+      toast.error('Please select a user to chat with');
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const getFileIcon = (fileName, format) => {
+    const fileExt = fileName?.split('.').pop()?.toLowerCase() || format?.toLowerCase();
+    if (fileExt === 'pdf') return <FaFilePdf className="text-red-500" size={24} />;
+    if (['doc', 'docx'].includes(fileExt)) return <FaFileWord className="text-blue-500" size={24} />;
+    if (['zip', 'rar', '7z'].includes(fileExt)) return <FaFileArchive className="text-yellow-500" size={24} />;
+    if (['txt'].includes(fileExt)) return <FaFile className="text-gray-300" size={24} />;
+    return <FaFile className="text-gray-400" size={24} />;
+  };
+
+  const getFileTypeName = (fileName, format) => {
+    const fileExt = fileName?.split('.').pop()?.toLowerCase() || format?.toLowerCase();
+    const typeMap = {
+      pdf: 'PDF Document',
+      doc: 'Word Document',
+      docx: 'Word Document',
+      zip: 'ZIP Archive',
+      rar: 'RAR Archive',
+      '7z': '7-Zip Archive',
+      txt: 'Text File',
     };
+    return typeMap[fileExt] || 'Document';
+  };
 
-    const getFileIcon = (fileName, format) => {
-        const fileExt = fileName?.split('.').pop()?.toLowerCase() || format?.toLowerCase();
-        if (fileExt === 'pdf') return <FaFilePdf className="text-red-500" size={24} />;
-        if (['doc', 'docx'].includes(fileExt)) return <FaFileWord className="text-blue-500" size={24} />;
-        if (['zip', 'rar', '7z'].includes(fileExt)) return <FaFileArchive className="text-yellow-500" size={24} />;
-        if (['txt'].includes(fileExt)) return <FaFile className="text-gray-300" size={24} />;
-        return <FaFile className="text-gray-400" size={24} />;
-    };
+  const handleDocumentClick = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
-    const getFileTypeName = (fileName, format) => {
-        const fileExt = fileName?.split('.').pop()?.toLowerCase() || format?.toLowerCase();
-        const typeMap = {
-            pdf: 'PDF Document',
-            doc: 'Word Document',
-            docx: 'Word Document',
-            zip: 'ZIP Archive',
-            rar: 'RAR Archive',
-            '7z': '7-Zip Archive',
-            txt: 'Text File',
+  const handleDownload = async (url, fileName) => {
+    try {
+      let downloadUrl = url;
+      if (url.includes('cloudinary.com') && !url.includes('/image/') && !url.includes('/video/')) {
+        downloadUrl = url.split('?')[0];
+      }
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'download';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Download failed');
+    }
+  };
+
+  // --- Recording logic (based on your working component)
+  const startRecording = async () => {
+    if (!activeUser) {
+      toast.error('Select a user to send voice note');
+      return;
+    }
+    setIsRecording(true);
+    setTranscript("");
+    setAudioURL(null);
+    setRecordingComplete(false);
+
+    // SpeechRecognition setup (optional)
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      try {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = "en-US";
+
+        recognitionRef.current.onresult = (event) => {
+          const { transcript } = event.results[event.results.length - 1][0];
+          setTranscript(transcript);
         };
-        return typeMap[fileExt] || 'Document';
-    };
 
-    const handleDocumentClick = (url) => {
-        window.open(url, '_blank', 'noopener,noreferrer');
-    };
+        recognitionRef.current.start();
+      } catch (e) {
+        console.warn('SpeechRecognition start failed', e);
+      }
+    }
 
-    const handleDownload = async (url, fileName) => {
-        try {
-            let downloadUrl = url;
-            if (url.includes('cloudinary.com') && !url.includes('/image/') && !url.includes('/video/')) {
-                downloadUrl = url.split('?')[0];
-            }
+    // iOS-safe mediaDevices fallback
+    if (typeof navigator.mediaDevices === "undefined") {
+      navigator.mediaDevices = {};
+    }
 
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = fileName || 'download';
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+    if (typeof navigator.mediaDevices.getUserMedia === "undefined") {
+      navigator.mediaDevices.getUserMedia = function (constraints) {
+        const getUserMedia =
+          navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
-            toast.success('Download started');
-        } catch (error) {
-            console.error('Download error:', error);
-            toast.error('Download failed');
+        if (!getUserMedia) {
+          alert(
+            "Your browser does not support audio recording. Try using Safari or Chrome (latest version) on HTTPS."
+          );
+          return Promise.reject(
+            new Error("getUserMedia is not implemented in this browser")
+          );
         }
-    };
 
-    return (
-        <>
-            {/* Messages Area */}
-            <div className="flex-1 p-4 overflow-y-auto bg-cover bg-center relative">
-                <div className="flex flex-col space-y-2 mx-auto">
-                    {!activeUser ? (
-                        <div className="text-center mt-20">
-                            <div className="w-24 h-24 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-4xl">💬</span>
-                            </div>
-                            <h3 className="text-xl font-light text-gray-300 mb-2">Welcome to WhatsApp</h3>
-                            <p className="text-gray-400">Select a user from the sidebar to start a conversation</p>
-                        </div>
-                    ) : chat.length > 0 ? (
-                        chat.map((msg, i) => (
-                            <div
-                                key={i}
-                                className={`max-w-[85%] md:max-w-[70%] h-auto p-3 rounded-lg ${msg.username === username
-                                    ? "ml-auto bg-[#005c4b] text-white"
-                                    : "mr-auto bg-[#2a3942] text-white"
-                                    }`}
-                            >
-                                {(msg.username !== username || activeChatType === 'group') && (
-                                    <p className="text-xs text-[#00a884] font-medium mb-1">
-                                        {msg.username}
-                                    </p>
-                                )}
+        return new Promise((resolve, reject) =>
+          getUserMedia.call(navigator, constraints, resolve, reject)
+        );
+      };
+    }
 
-                                {msg.type === "image" ? (
-                                    <div className="my-1">
-                                        <div
-                                            className="relative cursor-pointer group"
-                                            onClick={() => onOpenMedia(msg.message, 'image')}
-                                        >
-                                            <Image
-                                                src={msg.message}
-                                                alt={msg.fileName || 'Uploaded image'}
-                                                width={300}
-                                                height={200}
-                                                className="rounded-lg max-w-full h-auto object-cover transition-transform group-hover:scale-105"
-                                                style={{ maxHeight: '300px' }}
-                                            />
-                                        </div>
-                                        {msg.fileName && (
-                                            <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
-                                        )}
-                                    </div>
-                                ) : msg.type === "video" ? (
-                                    <div className="my-1">
-                                        <div
-                                            className="relative cursor-pointer group"
-                                            onClick={() => onOpenMedia(msg.message, 'video')}
-                                        >
-                                            <video
-                                                className="rounded-lg max-w-full h-auto"
-                                                style={{ maxHeight: '400px' }}
-                                                controls
-                                            >
-                                                <source src={msg.message} type="video/mp4" />
-                                            </video>
-                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full p-3">
-                                                    <FaPlay className="text-white" size={16} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {msg.fileName && (
-                                            <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
-                                        )}
-                                    </div>
-                                ) : msg.type === "file" ? (
-                                    <div className="my-1">
-                                        <div
-                                            className="flex items-center gap-3 p-3 bg-[#1e2a30] rounded-lg border border-[#374248] hover:bg-[#25313a] transition-colors cursor-pointer group"
-                                            onClick={() => handleDocumentClick(msg.message)}
-                                            title="Click to open document"
-                                        >
-                                            <div className="shrink-0">
-                                                {getFileIcon(msg.fileName, msg.format)}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-white truncate">
-                                                    {msg.fileName || 'Document'}
-                                                </p>
-                                                <p className="text-xs text-gray-400">
-                                                    {getFileTypeName(msg.fileName, msg.format)}
-                                                </p>
-                                            </div>
-                                            <div className="shrink-0 flex gap-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDownload(msg.message, msg.fileName);
-                                                    }}
-                                                    className="p-2 text-gray-300 hover:text-white hover:bg-[#00a884] rounded-full transition-colors"
-                                                    title="Download file"
-                                                >
-                                                    <FaDownload size={16} />
-                                                </button>
-                                                <div className="p-2 text-gray-400 group-hover:text-[#00a884] transition-colors">
-                                                    <FaExternalLinkAlt size={14} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-white text-left whitespace-pre-wrap wrap-break-words">
-                                        {msg.message}
-                                    </p>
-                                )}
+    // Audio recording setup
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
 
-                                <p className={`text-xs mt-2 text-right ${msg.username === username ? 'text-[#89b4a5]' : 'text-gray-400'
-                                    }`}>
-                                    {msg.time}
-                                </p>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center mt-20">
-                            <div className="w-20 h-20 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">👋</span>
-                            </div>
-                            <h3 className="text-lg font-light text-gray-300 mb-2">
-                                {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
-                            </h3>
-                            <p className="text-gray-400">
-                                {activeChatType === 'group' 
-                                    ? 'Send the first message in this group' 
-                                    : 'Send your first message to start the conversation'
-                                }
-                            </p>
-                        </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          setAudioURL(audioUrl);
+          setRecordingComplete(true);
+
+          // Prepare File to upload
+          const fileName = `voice_${Date.now()}.webm`;
+          const file = new File([audioBlob], fileName, { type: audioBlob.type || 'audio/webm' });
+
+          // Upload
+          if (!uploadToCloudinary || !sendFileMessage) {
+            console.error('uploadToCloudinary or sendFileMessage not provided');
+            toast.error('Upload helper missing');
+            return;
+          }
+
+          setAudioUploading(true);
+          toast.loading('Uploading voice note...', { id: 'voice-upload' });
+
+          const data = await uploadToCloudinary(file);
+          const url = data.secure_url;
+          const format = data.format || '';
+
+          // Send message as audio
+          await sendFileMessage({
+            url,
+            type: 'audio',
+            fileName,
+            format,
+            duration: data.duration ? Math.round(data.duration) : undefined
+          });
+
+          toast.success('Voice note sent', { id: 'voice-upload' });
+        } catch (err) {
+          console.error('Audio onstop/upload error:', err);
+          toast.error('Failed to send voice note', { id: 'voice-upload' });
+        } finally {
+          setAudioUploading(false);
+          setIsRecording(false);
+          // release audio chunks
+          audioChunksRef.current = [];
+        }
+      };
+
+      mediaRecorderRef.current.start();
+    } catch (err) {
+      console.error("Microphone access error:", err);
+      alert("Microphone access is blocked or unsupported on this device.");
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    try {
+      if (recognitionRef.current) recognitionRef.current.stop();
+    } catch (e) {}
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch (e) {}
+    setIsRecording(false);
+  };
+
+  const handleToggleRecording = () => {
+    if (!isRecording) startRecording();
+    else stopRecording();
+  };
+
+  return (
+    <>
+      {/* Messages Area */}
+      <div className="flex-1 p-4 overflow-y-auto bg-cover bg-center relative">
+        <div className="flex flex-col space-y-2 mx-auto">
+          {!activeUser ? (
+            <div className="text-center mt-20">
+              <div className="w-24 h-24 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">💬</span>
+              </div>
+              <h3 className="text-xl font-light text-gray-300 mb-2">Welcome to WhatsApp</h3>
+              <p className="text-gray-400">Select a user from the sidebar to start a conversation</p>
             </div>
+          ) : chat.length > 0 ? (
+            chat.map((msg, i) => (
+              <div
+                key={i}
+                className={`max-w-[85%] md:max-w-[70%] h-auto p-3 rounded-lg ${msg.username === username
+                  ? "ml-auto bg-[#005c4b] text-white"
+                  : "mr-auto bg-[#2a3942] text-white"
+                  }`}
+              >
+                {(msg.username !== username || activeChatType === 'group') && (
+                  <p className="text-xs text-[#00a884] font-medium mb-1">
+                    {msg.username}
+                  </p>
+                )}
 
-            {/* Input Area */}
-            <div className="p-3 bg-[#202c33] border-t border-[#374248]">
-                <div className="flex items-center gap-2 max-w-4xl mx-auto">
-                    <button
-                        onClick={handlePaperClipClick}
-                        disabled={!activeUser || uploading}
-                        className={`p-3 rounded-full transition-all ${!activeUser || uploading
-                            ? "text-gray-500 cursor-not-allowed"
-                            : "text-gray-300 hover:text-white hover:bg-[#374248]"
-                            }`}
-                        title="Upload file"
+                {msg.type === "image" ? (
+                  <div className="my-1">
+                    <div
+                      className="relative cursor-pointer group"
+                      onClick={() => onOpenMedia(msg.message, 'image')}
                     >
-                        <GoPaperclip size={20} />
-                    </button>
-
-                    <div className="flex-1 relative">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder={
-                                activeUser 
-                                    ? activeChatType === 'group' 
-                                        ? `Message group...` 
-                                        : `Message ${activeUser}...`
-                                    : "Select a user to start chatting"
-                            }
-                            className="w-full p-3 px-4 rounded-lg bg-[#2a3942] text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#00a884] border-none"
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") sendMessage(e);
-                            }}
-                            disabled={!activeUser || uploading}
-                        />
+                      <Image
+                        src={msg.message}
+                        alt={msg.fileName || 'Uploaded image'}
+                        width={300}
+                        height={200}
+                        className="rounded-lg max-w-full h-auto object-cover transition-transform group-hover:scale-105"
+                        style={{ maxHeight: '300px' }}
+                      />
                     </div>
-
-                    <button
-                        onClick={sendMessage}
-                        disabled={!activeUser || uploading || !message.trim()}
-                        className={`p-3 rounded-full transition-all ${!activeUser || uploading || !message.trim()
-                            ? "text-gray-500 cursor-not-allowed bg-[#2a3942]"
-                            : "text-white bg-[#00a884] hover:bg-[#00b884]"
-                            }`}
+                    {msg.fileName && (
+                      <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
+                    )}
+                  </div>
+                ) : msg.type === "video" ? (
+                  <div className="my-1">
+                    <div
+                      className="relative cursor-pointer group"
+                      onClick={() => onOpenMedia(msg.message, 'video')}
                     >
-                        <FaPaperPlane size={16} />
-                    </button>
-                </div>
+                      <video
+                        className="rounded-lg max-w-full h-auto"
+                        style={{ maxHeight: '400px' }}
+                        controls
+                      >
+                        <source src={msg.message} type="video/mp4" />
+                      </video>
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full p-3">
+                          <FaPlay className="text-white" size={16} />
+                        </div>
+                      </div>
+                    </div>
+                    {msg.fileName && (
+                      <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
+                    )}
+                  </div>
+                ) : msg.type === "file" ? (
+                  <div className="my-1">
+                    <div
+                      className="flex items-center gap-3 p-3 bg-[#1e2a30] rounded-lg border border-[#374248] hover:bg-[#25313a] transition-colors cursor-pointer group"
+                      onClick={() => handleDocumentClick(msg.message)}
+                      title="Click to open document"
+                    >
+                      <div className="shrink-0">
+                        {getFileIcon(msg.fileName, msg.format)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          {msg.fileName || 'Document'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {getFileTypeName(msg.fileName, msg.format)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 flex gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(msg.message, msg.fileName);
+                          }}
+                          className="p-2 text-gray-300 hover:text-white hover:bg-[#00a884] rounded-full transition-colors"
+                          title="Download file"
+                        >
+                          <FaDownload size={16} />
+                        </button>
+                        <div className="p-2 text-gray-400 group-hover:text-[#00a884] transition-colors">
+                          <FaExternalLinkAlt size={14} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : msg.type === "audio" ? (
+                  <div className="my-1">
+                    <audio controls src={msg.message} className="w-full" />
+                    {msg.fileName && (
+                      <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-white text-left whitespace-pre-wrap wrap-break-words">
+                    {msg.message}
+                  </p>
+                )}
+
+                <p className={`text-xs mt-2 text-right ${msg.username === username ? 'text-[#89b4a5]' : 'text-gray-400'
+                  }`}>
+                  {msg.time}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="text-center mt-20">
+              <div className="w-20 h-20 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">👋</span>
+              </div>
+              <h3 className="text-lg font-light text-gray-300 mb-2">
+                {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
+              </h3>
+              <p className="text-gray-400">
+                {activeChatType === 'group'
+                  ? 'Send the first message in this group'
+                  : 'Send your first message to start the conversation'
+                }
+              </p>
             </div>
-        </>
-    );
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="p-3 bg-[#202c33] border-t border-[#374248]">
+        <div className="flex items-center gap-2 max-w-4xl mx-auto">
+          <button
+            onClick={handlePaperClipClick}
+            disabled={!activeUser || uploading}
+            className={`p-3 rounded-full transition-all ${!activeUser || uploading
+              ? "text-gray-500 cursor-not-allowed"
+              : "text-gray-300 hover:text-white hover:bg-[#374248]"
+              }`}
+            title="Upload file"
+          >
+            <GoPaperclip size={20} />
+          </button>
+
+          {/* Voice recorder toggle */}
+          <button
+            onClick={handleToggleRecording}
+            disabled={!activeUser || uploading || audioUploading}
+            className={`p-3 rounded-full transition-all ${!activeUser || uploading || audioUploading
+              ? "text-gray-500 cursor-not-allowed"
+              : isRecording
+                ? "text-white bg-red-500 hover:bg-red-600"
+                : "text-gray-300 hover:text-white hover:bg-[#374248]"
+              }`}
+            title={isRecording ? "Stop recording" : "Record voice note"}
+          >
+            {isRecording ? <FaStop size={16} /> : <FaMicrophone size={16} />}
+          </button>
+
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={
+                activeUser
+                  ? activeChatType === 'group'
+                    ? `Message group...`
+                    : `Message ${activeUser}...`
+                  : "Select a user to start chatting"
+              }
+              className="w-full p-3 px-4 rounded-lg bg-[#2a3942] text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#00a884] border-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") sendMessage(e);
+              }}
+              disabled={!activeUser || uploading}
+            />
+          </div>
+
+          <button
+            onClick={sendMessage}
+            disabled={!activeUser || uploading || !message.trim()}
+            className={`p-3 rounded-full transition-all ${!activeUser || uploading || !message.trim()
+              ? "text-gray-500 cursor-not-allowed bg-[#2a3942]"
+              : "text-white bg-[#00a884] hover:bg-[#00b884]"
+              }`}
+          >
+            <FaPaperPlane size={16} />
+          </button>
+        </div>
+
+        {/* Temporary recorder status / transcript / audio preview */}
+        {(isRecording || transcript || audioURL || audioUploading) && (
+          <div className="mt-3 mx-auto max-w-4xl">
+            <div className="m-auto rounded-md border p-3 bg-[#111b21] shadow-md text-left">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">
+                    {audioUploading ? "Uploading..." : recordingComplete ? "Recording complete" : "Listening..."}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {audioUploading
+                      ? "Uploading voice note..."
+                      : recordingComplete
+                        ? "Voice note will be sent automatically."
+                        : "Speak clearly into your microphone."}
+                  </p>
+                </div>
+
+                {isRecording && (
+                  <div className="rounded-full w-4 h-4 bg-red-400 animate-pulse" />
+                )}
+              </div>
+
+              {transcript && (
+                <div className="border rounded-md p-2 mt-3 text-left bg-[#172029]">
+                  <p className="text-sm text-gray-200">{transcript}</p>
+                </div>
+              )}
+
+              {audioURL && (
+                <div className="mt-3">
+                  <audio controls src={audioURL} className="w-full" />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }

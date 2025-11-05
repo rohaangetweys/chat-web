@@ -144,7 +144,7 @@ export default function ChatUI() {
         return () => unsub();
     }, [activeUser, username, activeChatType]);
 
-    const sendFileMessage = async ({ url, type, fileName, format }) => {
+    const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
         if (!activeUser || !username) return;
 
         let chatRef;
@@ -163,9 +163,10 @@ export default function ChatUI() {
             await push(chatRef, {
                 username,
                 message: url,
-                type: type, // 'image' | 'video' | 'file'
+                type: type, // 'image' | 'video' | 'file' | 'audio'
                 fileName: fileName || '',
                 format: format || '',
+                duration: duration || undefined,
                 time: new Date().toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -444,6 +445,9 @@ export default function ChatUI() {
                     username={username}
                     onOpenMedia={openMediaModal}
                     activeChatType={activeChatType}
+                    // pass helpers so ChatArea can upload/send audio
+                    sendFileMessage={sendFileMessage}
+                    uploadToCloudinary={uploadToCloudinary}
                 />
 
                 {/* Media Modal */}
