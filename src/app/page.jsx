@@ -9,6 +9,7 @@ import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft } from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
 import MediaModal from "@/components/MediaModal";
+import VoiceRecorder from "@/components/VoiceRecorder";
 
 export default function ChatUI() {
     const router = useRouter();
@@ -26,6 +27,7 @@ export default function ChatUI() {
     const [modalType, setModalType] = useState(null); // 'image' | 'video'
     const [isMobileView, setIsMobileView] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
+    const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
 
     const fileInputRef = useRef(null);
 
@@ -144,7 +146,7 @@ export default function ChatUI() {
         return () => unsub();
     }, [activeUser, username, activeChatType]);
 
-    const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
+    const sendFileMessage = async ({ url, type, fileName, format, transcript, duration }) => {
         if (!activeUser || !username) return;
 
         let chatRef;
@@ -166,7 +168,8 @@ export default function ChatUI() {
                 type: type, // 'image' | 'video' | 'file' | 'audio'
                 fileName: fileName || '',
                 format: format || '',
-                duration: duration || undefined,
+                transcript: transcript || '',
+                duration: duration || '',
                 time: new Date().toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -186,7 +189,8 @@ export default function ChatUI() {
         // Choose correct endpoint
         const isImage = file.type.startsWith('image/');
         const isVideo = file.type.startsWith('video/');
-        const resourceType = isImage ? 'image' : isVideo ? 'video' : 'raw';
+        const isAudio = file.type.startsWith('audio/');
+        const resourceType = isImage ? 'image' : isVideo ? 'video' : isAudio ? 'video' : 'raw';
 
         try {
             const response = await fetch(`https://api.cloudinary.com/v1_1/dh72bjbwy/${resourceType}/upload`, {
@@ -276,7 +280,42 @@ export default function ChatUI() {
                 fileInputRef.current.value = '';
             }
         }
+    };
 
+    const handleVoiceRecordComplete = async (audioBlob, transcript, duration) => {
+        if (!activeUser) {
+            toast.error('Select a user to send voice message');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            toast.loading('Uploading voice message...', { id: 'voice-upload' });
+
+            // Convert blob to file
+            const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, {
+                type: 'audio/webm'
+            });
+
+            const data = await uploadToCloudinary(audioFile);
+
+            await sendFileMessage({
+                url: data.secure_url,
+                type: 'audio',
+                fileName: 'Voice Message',
+                format: 'webm',
+                transcript: transcript,
+                duration: duration
+            });
+
+            toast.success('Voice message sent!', { id: 'voice-upload' });
+            setShowVoiceRecorder(false);
+        } catch (error) {
+            console.error('Voice message upload error:', error);
+            toast.error('Failed to send voice message', { id: 'voice-upload' });
+        } finally {
+            setUploading(false);
+        }
     };
 
     const openMediaModal = (content, type) => {
@@ -445,10 +484,16 @@ export default function ChatUI() {
                     username={username}
                     onOpenMedia={openMediaModal}
                     activeChatType={activeChatType}
-                    // pass helpers so ChatArea can upload/send audio
-                    sendFileMessage={sendFileMessage}
-                    uploadToCloudinary={uploadToCloudinary}
+                    onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
                 />
+
+                {/* Voice Recorder Modal */}
+                {showVoiceRecorder && (
+                    <VoiceRecorder
+                        onRecordingComplete={handleVoiceRecordComplete}
+                        onClose={() => setShowVoiceRecorder(false)}
+                    />
+                )}
 
                 {/* Media Modal */}
                 <MediaModal
