@@ -3,7 +3,7 @@ import { logout } from '@/lib/firebase';
 import React, { useState } from 'react'
 import { FaSearch } from 'react-icons/fa';
 
-export default function Sidebar({ username, users, setUsers, activeUser, setActiveUser }) {
+export default function Sidebar({ username, users, setUsers, activeUser, setActiveUser, getRandomColor }) {
     const handleLogout = async () => {
         const res = await logout();
         if (res?.success) {
@@ -14,7 +14,17 @@ export default function Sidebar({ username, users, setUsers, activeUser, setActi
             console.error(res);
         }
     };
-    
+
+    function getRandomColor() {
+        const r = Math.floor(Math.random() * 80) + 40;
+        const g = Math.floor(Math.random() * 80) + 40;
+        const b = Math.floor(Math.random() * 80) + 40;
+
+        const toHex = (n) => n.toString(16).padStart(2, "0");
+
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
 
     return (
         <div className="w-1/4 bg-[#202c33] border-r border-[#374248] flex flex-col h-screen">
@@ -73,11 +83,12 @@ export default function Sidebar({ username, users, setUsers, activeUser, setActi
                                     }`}
                             >
                                 <div className="relative">
-                                    <img
-                                        src={`https://i.pravatar.cc/150?u=${u}`}
-                                        alt={u}
-                                        className="w-12 h-12 rounded-full"
-                                    />
+                                    <h2
+                                        className="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                                        style={{ backgroundColor: getRandomColor() }}
+                                    >
+                                        {u.slice(0, 1).toUpperCase()}
+                                    </h2>
                                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
                                 </div>
                                 <div className="flex-1 min-w-0">

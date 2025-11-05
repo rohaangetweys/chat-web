@@ -8,6 +8,7 @@ import { Toaster, toast } from "react-hot-toast";
 import { FaPhone, FaVideo, FaEllipsisV } from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
+import MediaModal from "@/components/MediaModal";
 
 export default function ChatUI() {
     const router = useRouter();
@@ -19,9 +20,10 @@ export default function ChatUI() {
     const [activeUser, setActiveUser] = useState("");
     const [chat, setChat] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [modalContent, setModalContent] = useState(null);
+    const [modalType, setModalType] = useState(null); // 'image' | 'video'
 
     const fileInputRef = useRef(null);
-
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -90,8 +92,7 @@ export default function ChatUI() {
         return () => unsub();
     }, [activeUser, username]);
 
-
-    const sendImageMessage = async (imageUrl) => {
+    const sendFileMessage = async ({ url, type, fileName, format }) => {
         if (!activeUser || !username) return;
 
         const chatId =
@@ -103,16 +104,18 @@ export default function ChatUI() {
         try {
             await push(chatRef, {
                 username,
-                message: imageUrl,
-                type: "image",
+                message: url,
+                type: type, // 'image' | 'video' | 'file'
+                fileName: fileName || '',
+                format: format || '',
                 time: new Date().toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                 }),
             });
         } catch (err) {
-            console.error("sendImageMessage error:", err);
-            toast.error("Failed to send image");
+            console.error("sendFileMessage error:", err);
+            toast.error("Failed to send file");
         }
     };
 
@@ -121,8 +124,13 @@ export default function ChatUI() {
         formData.append('file', file);
         formData.append('upload_preset', 'chat_app_upload');
 
+        // Choose correct endpoint
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        const resourceType = isImage ? 'image' : isVideo ? 'video' : 'raw';
+
         try {
-            const response = await fetch('https://api.cloudinary.com/v1_1/dh72bjbwy/image/upload', {
+            const response = await fetch(`https://api.cloudinary.com/v1_1/dh72bjbwy/${resourceType}/upload`, {
                 method: 'POST',
                 body: formData,
             });
@@ -132,45 +140,95 @@ export default function ChatUI() {
             }
 
             const data = await response.json();
-            return data.secure_url;
+            return data;
         } catch (error) {
             console.error('Upload error:', error);
             throw error;
         }
     };
 
-    const handleImageUpload = async (event) => {
+    const handleFileUpload = async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            toast.error('Please select an image file');
+        if (file.type.startsWith('audio/') && file.size > 10 * 1024 * 1024) {
+            toast.error('Audio size should be less than 10MB');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+        if (file.type.startsWith('image/') && file.size > 5 * 1024 * 1024) {
+            toast.error('Image size should be less than 5MB');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+        if (file.type.startsWith('video/') && file.size > 150 * 1024 * 1024) {
+            toast.error('Video size should be less than 150MB');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && file.size > 50 * 1024 * 1024) {
+            toast.error('File size should be less than 50MB');
+            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error('Image size should be less than 5MB');
+        if (!activeUser) {
+            toast.error('Select a user to send file');
+            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
         setUploading(true);
         try {
-            toast.loading('Uploading image...', { id: 'upload' });
-            const imageUrl = await uploadToCloudinary(file);
-            await sendImageMessage(imageUrl);
-            toast.success('Image sent successfully!', { id: 'upload' });
+            const kind = file.type.startsWith('image/') ? 'image' :
+                file.type.startsWith('video/') ? 'video' :
+                    file.type.startsWith('audio/') ? 'audio' : 'file';
+
+            toast.loading(`Uploading ${kind}...`, { id: 'upload' });
+
+            const data = await uploadToCloudinary(file);
+
+            let url = data.secure_url;
+            const fileName = file.name || data.original_filename || '';
+            const format = data.format || '';
+
+            let msgType = 'file'; // Default for documents
+            if (data.resource_type === 'image' || file.type.startsWith('image/')) {
+                msgType = 'image';
+            } else if (data.resource_type === 'video' || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+                msgType = file.type.startsWith('audio/') ? 'audio' : 'video';
+            }
+
+            await sendFileMessage({
+                url,
+                type: msgType,
+                fileName,
+                format,
+                duration: data.duration ? Math.round(data.duration) : undefined
+            });
+
+            toast.success(`${kind.charAt(0).toUpperCase() + kind.slice(1)} sent!`, { id: 'upload' });
         } catch (error) {
-            console.error('Image upload error:', error);
-            toast.error('Failed to upload image', { id: 'upload' });
+            console.error('File upload error:', error);
+            toast.error('Failed to upload file', { id: 'upload' });
         } finally {
             setUploading(false);
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
         }
+
     };
 
+    const openMediaModal = (content, type) => {
+        setModalContent(content);
+        setModalType(type);
+    };
 
+    const closeMediaModal = () => {
+        setModalContent(null);
+        setModalType(null);
+    };
 
     if (authChecking) {
         return (
@@ -189,8 +247,8 @@ export default function ChatUI() {
 
     return (
         <div className="flex h-screen bg-[#111b21] text-white overflow-hidden">
-            <Toaster 
-                position="top-center" 
+            <Toaster
+                position="top-center"
                 reverseOrder={false}
                 toastOptions={{
                     style: {
@@ -201,12 +259,11 @@ export default function ChatUI() {
                 }}
             />
 
-            {/* Hidden file input */}
             <input
                 type="file"
                 ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
+                onChange={handleFileUpload}
+                accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.zip,.txt"
                 className="hidden"
                 disabled={uploading || !activeUser}
             />
@@ -250,7 +307,22 @@ export default function ChatUI() {
                     </div>
                 )}
 
-                <ChatArea fileInputRef={fileInputRef} activeUser={activeUser} chat={chat} uploading={uploading} username={username} />
+                <ChatArea
+                    fileInputRef={fileInputRef}
+                    activeUser={activeUser}
+                    chat={chat}
+                    uploading={uploading}
+                    username={username}
+                    onOpenMedia={openMediaModal}
+                />
+
+                {/* Media Modal */}
+                <MediaModal
+                    isOpen={!!modalContent}
+                    onClose={closeMediaModal}
+                    content={modalContent}
+                    type={modalType}
+                />
             </div>
         </div>
     );
