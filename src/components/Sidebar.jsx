@@ -1,6 +1,4 @@
-'use client';
 import { logout } from '@/lib/firebase';
-import React, { useState } from 'react'
 import { FaSearch } from 'react-icons/fa';
 
 export default function Sidebar({ username, users, setUsers, activeUser, setActiveUser, getRandomColor }) {
