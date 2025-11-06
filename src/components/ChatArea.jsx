@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt, FaMicrophone, FaPause } from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
-export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick }) {
+export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick, onSendMessage }) {
     const [message, setMessage] = useState("");
     const messagesEndRef = useRef(null);
     const [playingAudio, setPlayingAudio] = useState(null);
@@ -20,27 +20,8 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
         e?.preventDefault();
         if (!message.trim() || !activeUser || !username) return;
 
-        let chatRef;
-        if (activeChatType === "individual") {
-            const chatId =
-                username < activeUser
-                    ? `${username}_${activeUser}`
-                    : `${activeUser}_${username}`;
-            chatRef = ref(db, `chats/${chatId}`);
-        } else {
-            chatRef = ref(db, `groupChats/${activeUser}/messages`);
-        }
-
         try {
-            await push(chatRef, {
-                username,
-                message: message.trim(),
-                type: "text",
-                time: new Date().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-            });
+            await onSendMessage(message.trim());
             setMessage("");
         } catch (err) {
             console.error("sendMessage error:", err);
@@ -272,8 +253,8 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                     ) : chat.length > 0 ? (
                         chat.map((msg, i) => (
                             <div
-                                key={i}
-                                className={`max-w-[85%] md:max-w-[70%] h-auto min-w-[15%] p-3 rounded-lg ${msg.username === username
+                                key={msg.id || i}
+                                className={`max-w-[85%] md:max-w-[70%] break-all h-auto min-w-[15%] p-3 rounded-lg ${msg.username === username
                                     ? "ml-auto bg-[#005c4b] text-white"
                                     : "mr-auto bg-[#2a3942] text-white"
                                     }`}

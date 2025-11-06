@@ -137,7 +137,10 @@ export default function ChatUI() {
         const unsub = onValue(chatRef, (snapshot) => {
             const msgs = [];
             snapshot.forEach((child) => {
-                msgs.push(child.val());
+                msgs.push({
+                    id: child.key,
+                    ...child.val()
+                });
             });
             setChat(msgs);
         });
@@ -167,6 +170,7 @@ export default function ChatUI() {
                 fileName: fileName || '',
                 format: format || '',
                 duration: duration || '',
+                timestamp: Date.now(),
                 time: new Date().toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -175,6 +179,37 @@ export default function ChatUI() {
         } catch (err) {
             console.error("sendFileMessage error:", err);
             toast.error("Failed to send file");
+        }
+    };
+
+    const sendMessage = async (messageText) => {
+        if (!activeUser || !username) return;
+
+        let chatRef;
+        if (activeChatType === "individual") {
+            const chatId =
+                username < activeUser
+                    ? `${username}_${activeUser}`
+                    : `${activeUser}_${username}`;
+            chatRef = ref(db, `chats/${chatId}`);
+        } else {
+            chatRef = ref(db, `groupChats/${activeUser}/messages`);
+        }
+
+        try {
+            await push(chatRef, {
+                username,
+                message: messageText,
+                type: "text",
+                timestamp: Date.now(),
+                time: new Date().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                }),
+            });
+        } catch (err) {
+            console.error("sendMessage error:", err);
+            toast.error("Failed to send message");
         }
     };
 
@@ -513,6 +548,7 @@ export default function ChatUI() {
                     activeChatType={activeChatType}
                     onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
                     onPaperClipClick={handlePaperClipClick}
+                    onSendMessage={sendMessage}
                 />
 
                 {/* File Type Selection Modal */}

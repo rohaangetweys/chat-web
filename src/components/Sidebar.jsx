@@ -4,7 +4,7 @@ import { FaSearch, FaUsers } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect, useMemo } from 'react';
-import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database';
+import { ref, onValue, query, orderByChild, orderByKey, limitToLast } from 'firebase/database';
 import { db } from '@/lib/firebase';
 
 export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup }) {
@@ -16,6 +16,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredGroups, setFilteredGroups] = useState([]);
   const [lastMessages, setLastMessages] = useState({});
+  const [sortedContacts, setSortedContacts] = useState([]);
 
   const handleLogout = async () => {
     const res = await logout();
@@ -78,7 +79,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     return users.filter(u => u !== username);
   }, [users, username]);
 
-  // Fetch last messages for individual chats
+  // Fetch last messages for individual chats with timestamps
   useEffect(() => {
     if (!username) return;
 
@@ -93,14 +94,20 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         if (snapshot.exists()) {
           const messages = [];
           snapshot.forEach((child) => {
-            messages.push(child.val());
+            messages.push({
+              id: child.key,
+              ...child.val()
+            });
           });
           
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
             setLastMessages(prev => ({
               ...prev,
-              [user]: lastMessage
+              [user]: {
+                ...lastMessage,
+                timestamp: lastMessage.timestamp || lastMessage.id || Date.now()
+              }
             }));
           } else {
             setLastMessages(prev => ({
@@ -124,7 +131,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     };
   }, [availableUsers, username]);
 
-  // Fetch last messages for group chats
+  // Fetch last messages for group chats with timestamps
   useEffect(() => {
     if (!username) return;
 
@@ -138,14 +145,20 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         if (snapshot.exists()) {
           const messages = [];
           snapshot.forEach((child) => {
-            messages.push(child.val());
+            messages.push({
+              id: child.key,
+              ...child.val()
+            });
           });
           
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
             setLastMessages(prev => ({
               ...prev,
-              [group.id]: lastMessage
+              [group.id]: {
+                ...lastMessage,
+                timestamp: lastMessage.timestamp || lastMessage.id || Date.now()
+              }
             }));
           } else {
             setLastMessages(prev => ({
@@ -168,6 +181,54 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
   }, [groups, username]);
+
+  // Sort contacts by last message timestamp
+  useEffect(() => {
+    const allContacts = [];
+    
+    // Add users with their last message info
+    availableUsers.forEach(user => {
+      const lastMessage = lastMessages[user];
+      allContacts.push({
+        type: 'user',
+        id: user,
+        name: user,
+        lastMessage: lastMessage,
+        timestamp: lastMessage?.timestamp || 0
+      });
+    });
+
+    // Add groups with their last message info
+    groups.forEach(group => {
+      const lastMessage = lastMessages[group.id];
+      allContacts.push({
+        type: 'group',
+        id: group.id,
+        name: group.name,
+        lastMessage: lastMessage,
+        timestamp: lastMessage?.timestamp || 0
+      });
+    });
+
+    // Sort by timestamp in descending order (newest first)
+    const sorted = allContacts.sort((a, b) => {
+      // If both have messages, sort by timestamp
+      if (a.timestamp && b.timestamp) {
+        return b.timestamp - a.timestamp;
+      }
+      // If only one has a message, put that one first
+      if (a.timestamp && !b.timestamp) {
+        return -1;
+      }
+      if (!a.timestamp && b.timestamp) {
+        return 1;
+      }
+      // If neither has messages, maintain original order
+      return 0;
+    });
+
+    setSortedContacts(sorted);
+  }, [availableUsers, groups, lastMessages]);
 
   const getLastMessagePreview = (target) => {
     const lastMessage = lastMessages[target];
@@ -194,7 +255,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     }
 
     // For group chats, show username who sent the message
-    if (activeChatType === 'group' && lastMessage.username) {
+    if (target in groups.reduce((acc, group) => ({ ...acc, [group.id]: true }), {}) && lastMessage.username) {
       return `${lastMessage.username}: ${messageContent}`;
     }
 
@@ -231,6 +292,46 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
   const clearSearch = () => {
     setSearchQuery('');
+  };
+
+  const renderContactItem = (contact) => {
+    const isActive = contact.id === activeUser && 
+      (contact.type === activeChatType || 
+       (contact.type === 'user' && activeChatType === 'individual') ||
+       (contact.type === 'group' && activeChatType === 'group'));
+
+    return (
+      <div
+        key={`${contact.type}-${contact.id}`}
+        onClick={() => contact.type === 'user' ? handleUserClick(contact.id) : handleGroupClick(contact.id)}
+        className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${isActive ? "bg-[#2a3942]" : ""}`}
+      >
+        <div className="relative">
+          {contact.type === 'user' ? (
+            <h2
+              className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white"
+              style={{ backgroundColor: getRandomColor() }}
+            >
+              {contact.name.slice(0, 1).toUpperCase()}
+            </h2>
+          ) : (
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white bg-purple-600">
+              👥
+            </div>
+          )}
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-white truncate">{contact.name}</h3>
+          <p className="text-sm text-gray-400 truncate">
+            {getLastMessagePreview(contact.id)}
+          </p>
+        </div>
+        {contact.type === 'user' && (
+          <span className="text-xs text-gray-400">●</span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -283,84 +384,49 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           </div>
         </div>
 
-        {/* Content Area - show groups first, then users */}
+        {/* Content Area - show sorted contacts */}
         <div className="flex-1 overflow-y-auto bg-[#111b21]">
-          {/* Groups Section */}
-          {filteredGroups.length === 0 ? (
-            <div className="text-center mt-6 px-4">
-              <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl">{searchQuery ? '🔍' : '👥'}</span>
-              </div>
-              <p className="text-gray-400 mb-1">{searchQuery ? 'No groups found' : 'No groups yet'}</p>
-              {searchQuery ? (
-                <p className="text-sm text-gray-500">Try a different search term</p>
-              ) : (
-                <p className="text-sm text-gray-500">Create your first group to get started</p>
-              )}
-            </div>
-          ) : (
-            filteredGroups.map((group) => (
-              <div
-                key={group.id}
-                onClick={() => handleGroupClick(group.id)}
-                className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${group.id === activeUser && activeChatType === 'group' ? "bg-[#2a3942]" : ""}
-                `}
-              >
-                <div className="relative">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white bg-purple-600"
-                  >
-                    👥
+          {searchQuery ? (
+            <>
+              {/* When searching, show filtered results */}
+              {filteredGroups.length === 0 && filteredUsers.length === 0 ? (
+                <div className="text-center mt-6 px-4">
+                  <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-xl">🔍</span>
                   </div>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
+                  <p className="text-gray-400 mb-1">No contacts found</p>
+                  <p className="text-sm text-gray-500">Try a different search term</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white truncate">{group.name}</h3>
-                  <p className="text-sm text-gray-400 truncate">
-                    {getLastMessagePreview(group.id)}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-
-          {/* Users List */}
-          {filteredUsers.length === 0 ? (
-            <div className="text-center mt-6 px-4">
-              <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl">{searchQuery ? '🔍' : '👤'}</span>
-              </div>
-              <p className="text-gray-400">{searchQuery ? 'No users found' : 'No users found'}</p>
-              {searchQuery && (
-                <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
+              ) : (
+                <>
+                  {filteredGroups.map((group) => renderContactItem({
+                    type: 'group',
+                    id: group.id,
+                    name: group.name
+                  }))}
+                  {filteredUsers.map((user) => renderContactItem({
+                    type: 'user',
+                    id: user,
+                    name: user
+                  }))}
+                </>
               )}
-            </div>
+            </>
           ) : (
-            filteredUsers.map((u, i) => (
-              <div
-                key={u + i}
-                onClick={() => handleUserClick(u)}
-                className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${u === activeUser && activeChatType === 'individual' ? "bg-[#2a3942]" : ""}
-                `}
-              >
-                <div className="relative">
-                  <h2
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white"
-                    style={{ backgroundColor: getRandomColor() }}
-                  >
-                    {u.slice(0, 1).toUpperCase()}
-                  </h2>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
+            <>
+              {/* When not searching, show sorted contacts */}
+              {sortedContacts.length === 0 ? (
+                <div className="text-center mt-6 px-4">
+                  <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-xl">👥</span>
+                  </div>
+                  <p className="text-gray-400 mb-1">No contacts yet</p>
+                  <p className="text-sm text-gray-500">Start a conversation or create a group</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white truncate">{u}</h3>
-                  <p className="text-sm text-gray-400 truncate">
-                    {getLastMessagePreview(u)}
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">●</span>
-              </div>
-            ))
+              ) : (
+                sortedContacts.map(renderContactItem)
+              )}
+            </>
           )}
         </div>
       </div>
