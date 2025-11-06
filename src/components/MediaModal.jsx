@@ -53,7 +53,7 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/85 bg-opacity-80 flex items-center justify-center z-50 p-4"
             onClick={handleBackdropClick}
         >
             <div className="relative max-w-4xl max-h-full w-full flex flex-col items-center">
@@ -61,17 +61,17 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
                 <div className="absolute -top-12 right-0 flex items-center gap-4">
                     <button
                         onClick={handleDownload}
-                        className="text-white hover:text-gray-300 transition-colors"
+                        className="text-white hover:text-gray-300 transition-colors bg-[#00a884] p-2 rounded-full shadow-lg"
                         title="Download"
                     >
-                        <FaDownload size={22} />
+                        <FaDownload size={18} />
                     </button>
                     <button
                         onClick={onClose}
-                        className="text-white hover:text-gray-300 transition-colors"
+                        className="text-white hover:text-gray-300 transition-colors bg-gray-600 p-2 rounded-full shadow-lg"
                         title="Close"
                     >
-                        <FaTimes size={24} />
+                        <FaTimes size={18} />
                     </button>
                 </div>
 
@@ -81,13 +81,13 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
                         <img
                             src={content}
                             alt="Full preview"
-                            className="max-w-full max-h-[80vh] w-auto h-auto object-contain mx-auto"
+                            className="max-w-full max-h-[80vh] w-auto h-auto object-contain mx-auto rounded-lg shadow-2xl"
                         />
                     ) : type === 'video' ? (
                         <video
                             controls
                             autoPlay
-                            className="max-w-full max-h-[80vh] w-auto h-auto mx-auto"
+                            className="max-w-full max-h-[80vh] w-auto h-auto mx-auto rounded-lg shadow-2xl"
                         >
                             <source src={content} type="video/mp4" />
                             Your browser does not support the video tag.

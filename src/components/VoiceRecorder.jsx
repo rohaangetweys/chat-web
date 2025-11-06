@@ -108,34 +108,36 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
     }, []);
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#2a3942] rounded-lg p-6 w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white">Voice Message</h3>
+        <div className="fixed inset-0 bg-black/85 bg-opacity-40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm mx-auto shadow-2xl">
+                <div className="flex justify-between items-center mb-5">
+                    <h3 className="text-xl font-bold text-gray-800">Voice Message</h3>
                     <button
                         onClick={handleCancel}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
                     >
-                        ✕
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
-                <div className="bg-[#202c33] rounded-lg p-4 mb-4">
+                <div className="bg-gray-100 rounded-lg p-4 mb-6 border border-gray-200">
                     <div className="flex justify-between items-center mb-3">
-                        <p className="text-sm font-medium text-white">
+                        <p className={`text-sm font-medium ${isRecording ? 'text-[#00a884]' : 'text-gray-700'}`}>
                             {recordingComplete ? "Recording complete" : isRecording ? "Recording..." : "Ready to record"}
                         </p>
                         {isRecording && (
                             <div className="flex items-center gap-2">
-                                <div className="rounded-full w-3 h-3 bg-red-400 animate-pulse" />
-                                <span className="text-sm text-red-400 font-medium">{formatTime(duration)}</span>
+                                <div className="rounded-full w-3 h-3 bg-red-500 animate-pulse" />
+                                <span className="text-sm text-red-500 font-medium">{formatTime(duration)}</span>
                             </div>
                         )}
                     </div>
 
                     {recordingComplete && (
-                        <div className="mt-3">
-                            <audio controls className="w-full">
+                        <div className="mt-4">
+                            <audio controls className="w-full rounded-lg">
                                 <source src={URL.createObjectURL(new Blob(audioChunksRef.current, { type: "audio/webm" }))} type="audio/webm" />
                             </audio>
                         </div>
@@ -146,7 +148,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                     {!isRecording && !recordingComplete ? (
                         <button
                             onClick={startRecording}
-                            className="w-full py-3 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium flex items-center justify-center gap-2 shadow-md"
                         >
                             <svg
                                 viewBox="0 0 256 256"
@@ -163,7 +165,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                     ) : isRecording ? (
                         <button
                             onClick={stopRecording}
-                            className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2 shadow-md"
                         >
                             <svg
                                 className="w-5 h-5"
@@ -178,13 +180,13 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                         <div className="flex gap-3">
                             <button
                                 onClick={startRecording}
-                                className="flex-1 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium border border-gray-300"
                             >
                                 Record Again
                             </button>
                             <button
                                 onClick={handleSendRecording}
-                                className="flex-1 py-3 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium"
+                                className="flex-1 py-3 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium shadow-md"
                             >
                                 Send Voice Message
                             </button>
@@ -193,7 +195,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
 
                     <button
                         onClick={handleCancel}
-                        className="w-full py-2 text-gray-400 hover:text-white transition-colors"
+                        className="w-full py-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
                     >
                         Cancel
                     </button>

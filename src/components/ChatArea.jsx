@@ -1,6 +1,4 @@
 'use client'
-import { db } from '@/lib/firebase';
-import { push, ref } from 'firebase/database';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -42,8 +40,8 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
         if (fileExt === 'pdf') return <FaFilePdf className="text-red-500" size={24} />;
         if (['doc', 'docx'].includes(fileExt)) return <FaFileWord className="text-blue-500" size={24} />;
         if (['zip', 'rar', '7z'].includes(fileExt)) return <FaFileArchive className="text-yellow-500" size={24} />;
-        if (['txt'].includes(fileExt)) return <FaFile className="text-gray-300" size={24} />;
-        return <FaFile className="text-gray-400" size={24} />;
+        if (['txt'].includes(fileExt)) return <FaFile className="text-gray-400" size={24} />;
+        return <FaFile className="text-gray-500" size={24} />;
     };
 
     const getFileTypeName = (fileName, format) => {
@@ -181,15 +179,15 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
 
         return (
             <div className="my-1 w-full max-w-xs md:max-w-sm lg:max-w-md">
-                <div className={`flex items-center gap-3 p-3 rounded-lg ${isOwnMessage
-                        ? 'bg-[#005c4b]'
-                        : 'bg-[#2a3942]'
+                <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isOwnMessage
+                        ? 'bg-[#00a884] border-[#00a884]'
+                        : 'bg-white border-gray-200'
                     }`}>
                     {/* Play/Pause Button */}
                     <button
                         onClick={togglePlayPause}
                         className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isOwnMessage
-                                ? 'bg-white text-[#005c4b] hover:bg-gray-100'
+                                ? 'bg-white text-[#00a884] hover:bg-gray-100'
                                 : 'bg-[#00a884] text-white hover:bg-[#00b884]'
                             }`}
                     >
@@ -199,7 +197,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                     {/* Progress Bar */}
                     <div className="flex-1 min-w-0">
                         <div
-                            className="relative h-1 bg-gray-600 rounded-full cursor-pointer mb-1"
+                            className="relative h-1 bg-gray-300 rounded-full cursor-pointer mb-1"
                             onClick={handleSeek}
                         >
                             <div
@@ -210,11 +208,11 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                         </div>
 
                         <div className="flex justify-between items-center">
-                            <span className={`text-xs ${isOwnMessage ? 'text-white' : 'text-gray-300'
+                            <span className={`text-xs ${isOwnMessage ? 'text-white' : 'text-gray-600'
                                 }`}>
                                 {formatDuration(currentTime)}
                             </span>
-                            <span className={`text-xs ${isOwnMessage ? 'text-white' : 'text-gray-400'
+                            <span className={`text-xs ${isOwnMessage ? 'text-white' : 'text-gray-500'
                                 }`}>
                                 {formatDuration(msg.duration)}
                             </span>
@@ -240,23 +238,23 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
     return (
         <>
             {/* Messages Area */}
-            <div className="flex-1 p-4 overflow-y-auto bg-cover bg-center relative">
+            <div className="flex-1 p-4 overflow-y-auto bg-gray-100 relative">
                 <div className="flex flex-col space-y-2 mx-auto">
                     {!activeUser ? (
                         <div className="text-center mt-20">
-                            <div className="w-24 h-24 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-4xl">💬</span>
+                            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                                <span className="text-4xl text-gray-400">💬</span>
                             </div>
-                            <h3 className="text-xl font-light text-gray-300 mb-2">Welcome to WhatsApp</h3>
-                            <p className="text-gray-400">Select a user from the sidebar to start a conversation</p>
+                            <h3 className="text-xl font-semibold text-gray-700 mb-2">Welcome to Chat</h3>
+                            <p className="text-gray-500">Select a contact from the sidebar to start a conversation</p>
                         </div>
                     ) : chat.length > 0 ? (
                         chat.map((msg, i) => (
                             <div
                                 key={msg.id || i}
-                                className={`max-w-[85%] md:max-w-[70%] break-all h-auto min-w-[15%] p-3 rounded-lg ${msg.username === username
-                                    ? "ml-auto bg-[#005c4b] text-white"
-                                    : "mr-auto bg-[#2a3942] text-white"
+                                className={`max-w-[85%] md:max-w-[70%] break-all h-auto min-w-[15%] p-3 rounded-2xl shadow-sm ${msg.username === username
+                                    ? "ml-auto bg-[#00a884] text-white"
+                                    : "mr-auto bg-white text-gray-800 border border-gray-200"
                                     }`}
                             >
                                 {(msg.username !== username || activeChatType === 'group') && (
@@ -276,12 +274,14 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                                 alt={msg.fileName || 'Uploaded image'}
                                                 width={300}
                                                 height={200}
-                                                className="rounded-lg max-w-full h-auto object-cover transition-transform group-hover:scale-105"
+                                                className="rounded-2xl max-w-full h-auto object-cover transition-transform group-hover:scale-105 border border-gray-200"
                                                 style={{ maxHeight: '300px' }}
                                             />
                                         </div>
                                         {msg.fileName && (
-                                            <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
+                                            <p className={`text-xs mt-1 ${msg.username === username ? 'text-gray-200' : 'text-gray-500'}`}>
+                                                {msg.fileName}
+                                            </p>
                                         )}
                                     </div>
                                 ) : msg.type === "video" ? (
@@ -291,20 +291,22 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                             onClick={() => onOpenMedia(msg.message, 'video')}
                                         >
                                             <video
-                                                className="rounded-lg max-w-full h-auto"
+                                                className="rounded-2xl max-w-full h-auto border border-gray-200"
                                                 style={{ maxHeight: '400px' }}
                                                 controls
                                             >
                                                 <source src={msg.message} type="video/mp4" />
                                             </video>
-                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full p-3">
+                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-2xl flex items-center justify-center">
+                                                <div className="group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full p-3">
                                                     <FaPlay className="text-white" size={16} />
                                                 </div>
                                             </div>
                                         </div>
                                         {msg.fileName && (
-                                            <p className="text-xs text-gray-300 mt-1">{msg.fileName}</p>
+                                            <p className={`text-xs mt-1 ${msg.username === username ? 'text-gray-200' : 'text-gray-500'}`}>
+                                                {msg.fileName}
+                                            </p>
                                         )}
                                     </div>
                                 ) : msg.type === "audio" ? (
@@ -312,7 +314,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                 ) : msg.type === "file" ? (
                                     <div className="my-1">
                                         <div
-                                            className="flex items-center gap-3 p-3 bg-[#1e2a30] rounded-lg border border-[#374248] hover:bg-[#25313a] transition-colors cursor-pointer group"
+                                            className="flex items-center gap-3 p-3 bg-gray-100 rounded-2xl border border-gray-300 hover:bg-gray-200 transition-colors cursor-pointer group"
                                             onClick={() => handleDocumentClick(msg.message)}
                                             title="Click to open document"
                                         >
@@ -320,10 +322,10 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                                 {getFileIcon(msg.fileName, msg.format)}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-white truncate">
+                                                <p className={`text-sm font-medium truncate ${msg.username === username ? 'text-white' : 'text-gray-800'}`}>
                                                     {msg.fileName || 'Document'}
                                                 </p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className={`text-xs ${msg.username === username ? 'text-gray-200' : 'text-gray-600'}`}>
                                                     {getFileTypeName(msg.fileName, msg.format)}
                                                 </p>
                                             </div>
@@ -333,24 +335,30 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                                         e.stopPropagation();
                                                         handleDownload(msg.message, msg.fileName);
                                                     }}
-                                                    className="p-2 text-gray-300 hover:text-white hover:bg-[#00a884] rounded-full transition-colors"
+                                                    className={`p-2 rounded-full transition-colors ${msg.username === username
+                                                        ? 'text-gray-200 hover:text-white hover:bg-[#008f70]'
+                                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-300'
+                                                        }`}
                                                     title="Download file"
                                                 >
                                                     <FaDownload size={16} />
                                                 </button>
-                                                <div className="p-2 text-gray-400 group-hover:text-[#00a884] transition-colors">
+                                                <div className={`p-2 transition-colors ${msg.username === username
+                                                    ? 'text-gray-200 group-hover:text-white'
+                                                    : 'text-gray-400 group-hover:text-[#00a884]'
+                                                    }`}>
                                                     <FaExternalLinkAlt size={14} />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-white text-left whitespace-pre-wrap wrap-break-words">
+                                    <p className={`text-left whitespace-pre-wrap wrap-break-words ${msg.username === username ? 'text-white' : 'text-gray-800'}`}>
                                         {msg.message}
                                     </p>
                                 )}
 
-                                <p className={`text-xs mt-2 text-right ${msg.username === username ? 'text-[#89b4a5]' : 'text-gray-400'
+                                <p className={`text-xs mt-2 text-right ${msg.username === username ? 'text-gray-200' : 'text-gray-500'
                                     }`}>
                                     {msg.time}
                                 </p>
@@ -358,13 +366,13 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                         ))
                     ) : (
                         <div className="text-center mt-20">
-                            <div className="w-20 h-20 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">👋</span>
+                            <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                                <span className="text-2xl text-gray-400">👋</span>
                             </div>
-                            <h3 className="text-lg font-light text-gray-300 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2">
                                 {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
                             </h3>
-                            <p className="text-gray-400">
+                            <p className="text-gray-500">
                                 {activeChatType === 'group'
                                     ? 'Send the first message in this group'
                                     : 'Send your first message to start the conversation'
@@ -377,14 +385,14 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
             </div>
 
             {/* Input Area */}
-            <div className="p-3 bg-[#202c33] border-t border-[#374248]">
-                <div className="flex items-center gap-2 max-w-4xl mx-auto">
+            <div className="p-4 bg-white border-t border-gray-200 shadow-sm flex items-center">
+                <div className="flex items-center gap-2 w-full">
                     <button
                         onClick={onPaperClipClick}
                         disabled={!activeUser || uploading}
                         className={`p-3 rounded-full transition-all ${!activeUser || uploading
-                            ? "text-gray-500 cursor-not-allowed"
-                            : "text-gray-300 hover:text-white hover:bg-[#374248]"
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-[#00a884] hover:bg-gray-100"
                             }`}
                         title="Upload file"
                     >
@@ -395,8 +403,8 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                         onClick={handleVoiceRecordClick}
                         disabled={!activeUser || uploading}
                         className={`p-3 rounded-full transition-all ${!activeUser || uploading
-                            ? "text-gray-500 cursor-not-allowed"
-                            : "text-gray-300 hover:text-white hover:bg-[#374248]"
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-[#00a884] hover:bg-gray-100"
                             }`}
                         title="Record voice message"
                     >
@@ -413,9 +421,9 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                                     ? activeChatType === 'group'
                                         ? `Message group...`
                                         : `Message ${activeUser}...`
-                                    : "Select a user to start chatting"
+                                    : "Select a contact to start chatting"
                             }
-                            className="w-full p-3 px-4 rounded-lg bg-[#2a3942] text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#00a884] border-none"
+                            className="w-full p-3 px-4 rounded-full bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] border-none shadow-inner"
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") sendMessage(e);
                             }}
@@ -427,8 +435,8 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                         onClick={sendMessage}
                         disabled={!activeUser || uploading || !message.trim()}
                         className={`p-3 rounded-full transition-all ${!activeUser || uploading || !message.trim()
-                            ? "text-gray-500 cursor-not-allowed bg-[#2a3942]"
-                            : "text-white bg-[#00a884] hover:bg-[#00b884]"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-white bg-[#00a884] hover:bg-[#00b884] shadow-md"
                             }`}
                     >
                         <FaPaperPlane size={16} />

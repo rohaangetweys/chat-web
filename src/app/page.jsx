@@ -3,14 +3,17 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { ref, onValue, push, set } from "firebase/database";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, logout } from "@/lib/firebase";
 import { Toaster, toast } from "react-hot-toast";
-import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft } from "react-icons/fa";
+import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
 import MediaModal from "@/components/MediaModal";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import FileTypeModal from "@/components/FileTypeModal";
+import { MdOutlineNotificationsActive } from "react-icons/md";
+import { FaUserCircle } from "react-icons/fa";
+import { HiOutlineUserGroup } from "react-icons/hi2";
 
 export default function ChatUI() {
     const router = useRouter();
@@ -31,8 +34,35 @@ export default function ChatUI() {
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showFileTypeModal, setShowFileTypeModal] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
+    const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
     const fileInputRef = useRef(null);
+    const profileDropdownRef = useRef(null);
+
+    const handleLogout = async () => {
+        const res = await logout();
+        if (res?.success) {
+            toast.success("Logged out");
+            router.push("/login");
+        } else {
+            toast.error("Logout failed");
+            console.error(res);
+        }
+    };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+                setShowProfileDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -144,7 +174,7 @@ export default function ChatUI() {
                 });
             });
             setChat(msgs);
-            
+
             // Mark messages as read when chat is active
             if (activeUser) {
                 markMessagesAsRead(activeUser, activeChatType);
@@ -164,10 +194,10 @@ export default function ChatUI() {
         // Individual chats
         users.forEach((user) => {
             if (user === username) return;
-            
+
             const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
             const chatRef = ref(db, `chats/${chatId}`);
-            
+
             const unsubscribe = onValue(chatRef, (snapshot) => {
                 if (!snapshot.exists()) {
                     newUnreadCounts[user] = 0;
@@ -188,7 +218,7 @@ export default function ChatUI() {
                 const lastRead = parseInt(localStorage.getItem(lastReadKey)) || 0;
 
                 // Count unread messages (messages after last read time)
-                const unread = messages.filter(msg => 
+                const unread = messages.filter(msg =>
                     msg.timestamp > lastRead && msg.username !== username
                 ).length;
 
@@ -202,7 +232,7 @@ export default function ChatUI() {
         // Group chats
         groups.forEach((group) => {
             const messagesRef = ref(db, `groupChats/${group.id}/messages`);
-            
+
             const unsubscribe = onValue(messagesRef, (snapshot) => {
                 if (!snapshot.exists()) {
                     newUnreadCounts[group.id] = 0;
@@ -223,7 +253,7 @@ export default function ChatUI() {
                 const lastRead = parseInt(localStorage.getItem(lastReadKey)) || 0;
 
                 // Count unread messages (messages after last read time)
-                const unread = messages.filter(msg => 
+                const unread = messages.filter(msg =>
                     msg.timestamp > lastRead && msg.username !== username
                 ).length;
 
@@ -244,12 +274,12 @@ export default function ChatUI() {
     const markMessagesAsRead = (target, type = 'individual') => {
         if (!username) return;
 
-        const lastReadKey = type === 'individual' 
+        const lastReadKey = type === 'individual'
             ? `lastRead_${username}_${target}`
             : `lastRead_${username}_${target}`;
-        
+
         localStorage.setItem(lastReadKey, Date.now().toString());
-        
+
         // Update unread counts
         setUnreadCounts(prev => ({
             ...prev,
@@ -497,10 +527,10 @@ export default function ChatUI() {
     const handleUserSelect = (user, type = 'individual') => {
         setActiveUser(user);
         setActiveChatType(type);
-        
+
         // Mark messages as read when selecting a chat
         markMessagesAsRead(user, type);
-        
+
         if (isMobileView) {
             setShowSidebar(false);
         }
@@ -548,10 +578,10 @@ export default function ChatUI() {
 
     if (authChecking) {
         return (
-            <div className="h-screen flex items-center justify-center bg-[#111b21]">
+            <div className="h-full w-full flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-300">Checking authentication...</p>
+                    <p className="text-gray-600">Checking authentication...</p>
                 </div>
             </div>
         );
@@ -562,15 +592,15 @@ export default function ChatUI() {
     }
 
     return (
-        <div className="flex h-screen bg-[#111b21] text-white overflow-hidden">
+        <div className="flex flex-col h-full w-full px-20 py-10 border bg-gray-300 text-gray-800 overflow-hidden justify-center items-center">
             <Toaster
                 position="top-center"
                 reverseOrder={false}
                 toastOptions={{
                     style: {
-                        background: '#2a3942',
+                        background: '#00a884',
                         color: 'white',
-                        border: '1px solid #374248',
+                        border: '1px solid #00a884',
                     },
                 }}
             />
@@ -584,110 +614,152 @@ export default function ChatUI() {
                 disabled={uploading || !activeUser}
             />
 
-            {/* Sidebar - Conditionally rendered based on mobile view */}
-            <div className={`${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-1/4'}`}>
-                <Sidebar
-                    activeUser={activeUser}
-                    setActiveUser={handleUserSelect}
-                    setUsers={setUsers}
-                    username={username}
-                    users={users}
-                    groups={groups}
-                    activeChatType={activeChatType}
-                    setActiveChatType={setActiveChatType}
-                    onCreateGroup={createGroupChat}
-                    unreadCounts={unreadCounts}
-                />
-            </div>
+            <header className="px-6 border bg-white border-gray-300 w-full h-20 rounded-3xl flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                    <div className="bg-[#00a884] text-white px-6 h-10 rounded-xl flex items-center justify-center opacity-50 text-xl font-semibold">
+                        <h1 className="text-2xl font-bold tracking-wide">Chat App</h1>
+                    </div>
+                </div>
 
-            {/* Chat Area - Conditionally rendered based on mobile view */}
-            <div className={`${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col bg-[#0b141a]`}>
-                {/* Chat Header with Back Button for Mobile */}
-                {activeUser ? (
-                    <div className="flex items-center justify-between p-3 bg-[#202c33] border-b border-[#374248]">
-                        <div className="flex items-center gap-3">
-                            {isMobileView && (
-                                <button
-                                    onClick={handleBackToSidebar}
-                                    className="p-2 text-gray-300 hover:text-white transition-colors"
-                                >
-                                    <FaArrowLeft size={18} />
-                                </button>
-                            )}
-                            <div className="relative">
-                                <div className={`w-10 h-10 rounded-full flex justify-center items-center text-white font-semibold ${activeChatType === 'group' ? 'bg-purple-600' : 'bg-[#00a884]'
-                                    }`}>
-                                    {activeChatType === 'group' ? '👥' : activeUser.slice(0, 1).toUpperCase()}
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full text-[#00a884] hover:bg-gray-200 transition-colors">
+                        <MdOutlineNotificationsActive className="text-[#00a884] text-[26px] hover:bg-gray-200 transition-colors" />
+                    </div>
+                    
+                    {/* Profile Button with Dropdown */}
+                    <div className="relative" ref={profileDropdownRef}>
+                        <button
+                            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                            className="p-2 rounded-full text-[#00a884] hover:bg-gray-200 transition-colors flex items-center gap-2"
+                        >
+                            <FaUserCircle className="text-[#00a884] text-[26px]" />
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {showProfileDropdown && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                                    <p className="font-medium">Hello, {username}</p>
                                 </div>
-                                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-[#202c33]"></div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                    <FaSignOutAlt className="mr-2 text-gray-500" />
+                                    Logout
+                                </button>
                             </div>
-                            <div>
-                                <h2 className="font-semibold text-white">
-                                    {activeChatType === 'group' ?
-                                        groups.find(g => g.id === activeUser)?.name || activeUser.split('_')[0]
-                                        : activeUser
-                                    }
-                                </h2>
-                                <p className="text-xs text-gray-400">
-                                    {activeChatType === 'group' ? 'Group' : 'Online'}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-6 text-gray-300">
-                            <FaEllipsisV className="cursor-pointer hover:text-white transition-colors" size={16} />
-                        </div>
+                        )}
                     </div>
-                ) : (
-                    <div className="flex items-center justify-between p-3 bg-[#202c33] border-b border-[#374248]">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#2a3942] flex justify-center items-center text-gray-400">
-                                💬
+                </div>
+            </header>
+
+            <div className="flex w-full h-full overflow-hidden border border-gray-300 gap-4">
+                {/* Sidebar - Conditionally rendered based on mobile view */}
+                <div className={`flex rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-1/4'}`}>
+                    <Sidebar
+                        activeUser={activeUser}
+                        setActiveUser={handleUserSelect}
+                        setUsers={setUsers}
+                        username={username}
+                        users={users}
+                        groups={groups}
+                        activeChatType={activeChatType}
+                        setActiveChatType={setActiveChatType}
+                        onCreateGroup={createGroupChat}
+                        unreadCounts={unreadCounts}
+                    />
+                </div>
+
+                {/* Chat Area - Conditionally rendered based on mobile view */}
+                <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col bg-gray-50`}>
+                    {/* Chat Header with Back Button for Mobile */}
+                    {activeUser ? (
+                        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                {isMobileView && (
+                                    <button
+                                        onClick={handleBackToSidebar}
+                                        className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                    >
+                                        <FaArrowLeft size={18} />
+                                    </button>
+                                )}
+                                <div className="relative">
+                                    <div className={`w-10 h-10 rounded-full flex justify-center items-center text-white font-semibold ${activeChatType === 'group' ? 'bg-indigo-500' : 'bg-[#00a884]'
+                                        }`}>
+                                        {activeChatType === 'group' ? <HiOutlineUserGroup size={22} /> : activeUser.slice(0, 1).toUpperCase()}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-white"></div>
+                                </div>
+                                <div>
+                                    <h2 className="font-semibold text-gray-800">
+                                        {activeChatType === 'group' ?
+                                            groups.find(g => g.id === activeUser)?.name || activeUser.split('_')[0]
+                                            : activeUser
+                                        }
+                                    </h2>
+                                    <p className="text-xs text-gray-500">
+                                        {activeChatType === 'group' ? 'Group' : 'Online'}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="font-semibold text-white">WhatsApp</h2>
-                                <p className="text-xs text-gray-400">Select a user to start chatting</p>
+
+                            <div className="flex items-center gap-6 text-gray-600">
+                                <FaEllipsisV className="cursor-pointer hover:text-gray-800 transition-colors" size={16} />
                             </div>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gray-200 flex justify-center items-center text-gray-500">
+                                    💬
+                                </div>
+                                <div>
+                                    <h2 className="font-semibold text-gray-800">Chat App</h2>
+                                    <p className="text-xs text-gray-500">Select a contact to start chatting</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                <ChatArea
-                    fileInputRef={fileInputRef}
-                    activeUser={activeUser}
-                    chat={chat}
-                    uploading={uploading}
-                    username={username}
-                    onOpenMedia={openMediaModal}
-                    activeChatType={activeChatType}
-                    onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
-                    onPaperClipClick={handlePaperClipClick}
-                    onSendMessage={sendMessage}
-                />
-
-                {/* File Type Selection Modal */}
-                {showFileTypeModal && (
-                    <FileTypeModal
-                        onClose={() => setShowFileTypeModal(false)}
-                        onFileTypeSelect={handleFileTypeSelect}
+                    <ChatArea
+                        fileInputRef={fileInputRef}
+                        activeUser={activeUser}
+                        chat={chat}
+                        uploading={uploading}
+                        username={username}
+                        onOpenMedia={openMediaModal}
+                        activeChatType={activeChatType}
+                        onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
+                        onPaperClipClick={handlePaperClipClick}
+                        onSendMessage={sendMessage}
                     />
-                )}
 
-                {/* Voice Recorder Modal */}
-                {showVoiceRecorder && (
-                    <VoiceRecorder
-                        onRecordingComplete={handleVoiceRecordComplete}
-                        onClose={() => setShowVoiceRecorder(false)}
+                    {/* File Type Selection Modal */}
+                    {showFileTypeModal && (
+                        <FileTypeModal
+                            onClose={() => setShowFileTypeModal(false)}
+                            onFileTypeSelect={handleFileTypeSelect}
+                        />
+                    )}
+
+                    {/* Voice Recorder Modal */}
+                    {showVoiceRecorder && (
+                        <VoiceRecorder
+                            onRecordingComplete={handleVoiceRecordComplete}
+                            onClose={() => setShowVoiceRecorder(false)}
+                        />
+                    )}
+
+                    {/* Media Modal */}
+                    <MediaModal
+                        isOpen={!!modalContent}
+                        onClose={closeMediaModal}
+                        content={modalContent}
+                        type={modalType}
                     />
-                )}
-
-                {/* Media Modal */}
-                <MediaModal
-                    isOpen={!!modalContent}
-                    onClose={closeMediaModal}
-                    content={modalContent}
-                    type={modalType}
-                />
+                </div>
             </div>
         </div>
     );

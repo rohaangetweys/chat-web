@@ -1,8 +1,8 @@
 import "./globals.css";
-import { Poppins } from 'next/font/google'
+import { Inter } from 'next/font/google'
 
 
-const poppins = Poppins({
+const poppins = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
 })
@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`antialiased ${poppins.className}`}
+        className={`antialiased flex h-screen bg-gray-400 ${poppins.className}`}
       >
         {children}
       </body>
