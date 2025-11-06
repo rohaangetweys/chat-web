@@ -30,6 +30,7 @@ export default function ChatUI() {
     const [showSidebar, setShowSidebar] = useState(true);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showFileTypeModal, setShowFileTypeModal] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState({});
 
     const fileInputRef = useRef(null);
 
@@ -143,10 +144,118 @@ export default function ChatUI() {
                 });
             });
             setChat(msgs);
+            
+            // Mark messages as read when chat is active
+            if (activeUser) {
+                markMessagesAsRead(activeUser, activeChatType);
+            }
         });
 
         return () => unsub();
     }, [activeUser, username, activeChatType]);
+
+    // Track unread messages for all conversations
+    useEffect(() => {
+        if (!username) return;
+
+        const unsubscribeFunctions = [];
+        const newUnreadCounts = {};
+
+        // Individual chats
+        users.forEach((user) => {
+            if (user === username) return;
+            
+            const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
+            const chatRef = ref(db, `chats/${chatId}`);
+            
+            const unsubscribe = onValue(chatRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    newUnreadCounts[user] = 0;
+                    return;
+                }
+
+                const messages = [];
+                snapshot.forEach((child) => {
+                    const message = child.val();
+                    messages.push({
+                        id: child.key,
+                        ...message
+                    });
+                });
+
+                // Get last read time from localStorage
+                const lastReadKey = `lastRead_${username}_${user}`;
+                const lastRead = parseInt(localStorage.getItem(lastReadKey)) || 0;
+
+                // Count unread messages (messages after last read time)
+                const unread = messages.filter(msg => 
+                    msg.timestamp > lastRead && msg.username !== username
+                ).length;
+
+                newUnreadCounts[user] = unread;
+                setUnreadCounts(prev => ({ ...prev, [user]: unread }));
+            });
+
+            unsubscribeFunctions.push(unsubscribe);
+        });
+
+        // Group chats
+        groups.forEach((group) => {
+            const messagesRef = ref(db, `groupChats/${group.id}/messages`);
+            
+            const unsubscribe = onValue(messagesRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    newUnreadCounts[group.id] = 0;
+                    return;
+                }
+
+                const messages = [];
+                snapshot.forEach((child) => {
+                    const message = child.val();
+                    messages.push({
+                        id: child.key,
+                        ...message
+                    });
+                });
+
+                // Get last read time from localStorage
+                const lastReadKey = `lastRead_${username}_${group.id}`;
+                const lastRead = parseInt(localStorage.getItem(lastReadKey)) || 0;
+
+                // Count unread messages (messages after last read time)
+                const unread = messages.filter(msg => 
+                    msg.timestamp > lastRead && msg.username !== username
+                ).length;
+
+                newUnreadCounts[group.id] = unread;
+                setUnreadCounts(prev => ({ ...prev, [group.id]: unread }));
+            });
+
+            unsubscribeFunctions.push(unsubscribe);
+        });
+
+        setUnreadCounts(newUnreadCounts);
+
+        return () => {
+            unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+        };
+    }, [users, groups, username]);
+
+    const markMessagesAsRead = (target, type = 'individual') => {
+        if (!username) return;
+
+        const lastReadKey = type === 'individual' 
+            ? `lastRead_${username}_${target}`
+            : `lastRead_${username}_${target}`;
+        
+        localStorage.setItem(lastReadKey, Date.now().toString());
+        
+        // Update unread counts
+        setUnreadCounts(prev => ({
+            ...prev,
+            [target]: 0
+        }));
+    };
 
     const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
         if (!activeUser || !username) return;
@@ -388,6 +497,10 @@ export default function ChatUI() {
     const handleUserSelect = (user, type = 'individual') => {
         setActiveUser(user);
         setActiveChatType(type);
+        
+        // Mark messages as read when selecting a chat
+        markMessagesAsRead(user, type);
+        
         if (isMobileView) {
             setShowSidebar(false);
         }
@@ -483,6 +596,7 @@ export default function ChatUI() {
                     activeChatType={activeChatType}
                     setActiveChatType={setActiveChatType}
                     onCreateGroup={createGroupChat}
+                    unreadCounts={unreadCounts}
                 />
             </div>
 

@@ -4,10 +4,10 @@ import { FaSearch, FaUsers } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect, useMemo } from 'react';
-import { ref, onValue, query, orderByChild, orderByKey, limitToLast } from 'firebase/database';
+import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database';
 import { db } from '@/lib/firebase';
 
-export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup }) {
+export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts }) {
   const router = useRouter();
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -194,7 +194,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         id: user,
         name: user,
         lastMessage: lastMessage,
-        timestamp: lastMessage?.timestamp || 0
+        timestamp: lastMessage?.timestamp || 0,
+        unreadCount: unreadCounts[user] || 0
       });
     });
 
@@ -206,7 +207,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         id: group.id,
         name: group.name,
         lastMessage: lastMessage,
-        timestamp: lastMessage?.timestamp || 0
+        timestamp: lastMessage?.timestamp || 0,
+        unreadCount: unreadCounts[group.id] || 0
       });
     });
 
@@ -228,7 +230,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     });
 
     setSortedContacts(sorted);
-  }, [availableUsers, groups, lastMessages]);
+  }, [availableUsers, groups, lastMessages, unreadCounts]);
 
   const getLastMessagePreview = (target) => {
     const lastMessage = lastMessages[target];
@@ -260,6 +262,27 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     }
 
     return messageContent;
+  };
+
+  const formatLastMessageTime = (timestamp) => {
+    if (!timestamp) return '';
+    
+    const messageDate = new Date(timestamp);
+    const now = new Date();
+    const diffInMs = now - messageDate;
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInHours / 24;
+
+    if (diffInHours < 24) {
+      // Today - show time
+      return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInDays < 7) {
+      // Within a week - show day name
+      return messageDate.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      // Older than a week - show date
+      return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
   };
 
   useEffect(() => {
@@ -300,11 +323,13 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
        (contact.type === 'user' && activeChatType === 'individual') ||
        (contact.type === 'group' && activeChatType === 'group'));
 
+    const hasUnread = contact.unreadCount > 0;
+
     return (
       <div
         key={`${contact.type}-${contact.id}`}
         onClick={() => contact.type === 'user' ? handleUserClick(contact.id) : handleGroupClick(contact.id)}
-        className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${isActive ? "bg-[#2a3942]" : ""}`}
+        className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${isActive ? "bg-[#2a3942]" : ""} ${hasUnread ? "bg-[#1f2c33]" : ""}`}
       >
         <div className="relative">
           {contact.type === 'user' ? (
@@ -321,15 +346,33 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           )}
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
         </div>
+        
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white truncate">{contact.name}</h3>
-          <p className="text-sm text-gray-400 truncate">
-            {getLastMessagePreview(contact.id)}
-          </p>
+          <div className="flex justify-between items-start mb-1">
+            <h3 className={`font-semibold truncate ${hasUnread ? "text-white" : "text-white"}`}>
+              {contact.name}
+            </h3>
+            {contact.lastMessage && (
+              <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                {formatLastMessageTime(contact.lastMessage.timestamp)}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <p className={`text-sm truncate ${hasUnread ? "text-white font-medium" : "text-gray-400"}`}>
+              {getLastMessagePreview(contact.id)}
+            </p>
+            
+            {hasUnread && (
+              <div className="flex-shrink-0 ml-2">
+                <div className="bg-[#00a884] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 font-medium">
+                  {contact.unreadCount > 99 ? '99+' : contact.unreadCount}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        {contact.type === 'user' && (
-          <span className="text-xs text-gray-400">●</span>
-        )}
       </div>
     );
   };
@@ -399,16 +442,26 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
                 </div>
               ) : (
                 <>
-                  {filteredGroups.map((group) => renderContactItem({
-                    type: 'group',
-                    id: group.id,
-                    name: group.name
-                  }))}
-                  {filteredUsers.map((user) => renderContactItem({
-                    type: 'user',
-                    id: user,
-                    name: user
-                  }))}
+                  {filteredGroups.map((group) => {
+                    const contact = {
+                      type: 'group',
+                      id: group.id,
+                      name: group.name,
+                      lastMessage: lastMessages[group.id],
+                      unreadCount: unreadCounts[group.id] || 0
+                    };
+                    return renderContactItem(contact);
+                  })}
+                  {filteredUsers.map((user) => {
+                    const contact = {
+                      type: 'user',
+                      id: user,
+                      name: user,
+                      lastMessage: lastMessages[user],
+                      unreadCount: unreadCounts[user] || 0
+                    };
+                    return renderContactItem(contact);
+                  })}
                 </>
               )}
             </>
