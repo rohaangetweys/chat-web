@@ -448,8 +448,6 @@ export default function ChatUI() {
                         </div>
 
                         <div className="flex items-center gap-6 text-gray-300">
-                            <FaPhone className="cursor-pointer hover:text-white transition-colors" size={18} />
-                            <FaVideo className="cursor-pointer hover:text-white transition-colors" size={18} />
                             <FaEllipsisV className="cursor-pointer hover:text-white transition-colors" size={16} />
                         </div>
                     </div>
