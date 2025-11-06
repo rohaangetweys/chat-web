@@ -4,16 +4,18 @@ import { FaSearch, FaUsers } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect, useMemo } from 'react';
+import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database';
+import { db } from '@/lib/firebase';
 
 export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup }) {
   const router = useRouter();
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredGroups, setFilteredGroups] = useState([]);
+  const [lastMessages, setLastMessages] = useState({});
 
   const handleLogout = async () => {
     const res = await logout();
@@ -69,13 +71,135 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     if (groupId) {
       handleGroupClick(groupId);
       closeGroupModal();
-      setActiveTab('groups');
     }
   };
 
   const availableUsers = useMemo(() => {
     return users.filter(u => u !== username);
   }, [users, username]);
+
+  // Fetch last messages for individual chats
+  useEffect(() => {
+    if (!username) return;
+
+    const unsubscribeFunctions = [];
+
+    availableUsers.forEach((user) => {
+      const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
+      const chatRef = ref(db, `chats/${chatId}`);
+      const lastMessageQuery = query(chatRef, orderByKey(), limitToLast(1));
+      
+      const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
+        if (snapshot.exists()) {
+          const messages = [];
+          snapshot.forEach((child) => {
+            messages.push(child.val());
+          });
+          
+          if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            setLastMessages(prev => ({
+              ...prev,
+              [user]: lastMessage
+            }));
+          } else {
+            setLastMessages(prev => ({
+              ...prev,
+              [user]: null
+            }));
+          }
+        } else {
+          setLastMessages(prev => ({
+            ...prev,
+            [user]: null
+          }));
+        }
+      });
+
+      unsubscribeFunctions.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    };
+  }, [availableUsers, username]);
+
+  // Fetch last messages for group chats
+  useEffect(() => {
+    if (!username) return;
+
+    const unsubscribeFunctions = [];
+
+    groups.forEach((group) => {
+      const messagesRef = ref(db, `groupChats/${group.id}/messages`);
+      const lastMessageQuery = query(messagesRef, orderByKey(), limitToLast(1));
+      
+      const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
+        if (snapshot.exists()) {
+          const messages = [];
+          snapshot.forEach((child) => {
+            messages.push(child.val());
+          });
+          
+          if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            setLastMessages(prev => ({
+              ...prev,
+              [group.id]: lastMessage
+            }));
+          } else {
+            setLastMessages(prev => ({
+              ...prev,
+              [group.id]: null
+            }));
+          }
+        } else {
+          setLastMessages(prev => ({
+            ...prev,
+            [group.id]: null
+          }));
+        }
+      });
+
+      unsubscribeFunctions.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    };
+  }, [groups, username]);
+
+  const getLastMessagePreview = (target) => {
+    const lastMessage = lastMessages[target];
+    if (!lastMessage) return 'No messages yet';
+
+    const username = lastMessage.username;
+    let messageContent = '';
+
+    switch (lastMessage.type) {
+      case 'image':
+        messageContent = '📷 Image';
+        break;
+      case 'video':
+        messageContent = '🎥 Video';
+        break;
+      case 'audio':
+        messageContent = '🎤 Voice message';
+        break;
+      case 'file':
+        messageContent = `📄 ${lastMessage.fileName || 'File'}`;
+        break;
+      default:
+        messageContent = lastMessage.message || 'Message';
+    }
+
+    // For group chats, show username who sent the message
+    if (activeChatType === 'group' && lastMessage.username) {
+      return `${lastMessage.username}: ${messageContent}`;
+    }
+
+    return messageContent;
+  };
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -137,35 +261,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           </button>
         </div>
 
-        {/* Breadcrumbs */}
-        <div className="flex bg-[#202c33] border-b border-[#374248]">
-          <button
-            onClick={() => {
-              setActiveTab('users');
-              clearSearch();
-            }}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'users'
-                ? 'text-[#00a884] border-b-2 border-[#00a884]'
-                : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            Users
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('groups');
-              clearSearch();
-            }}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'groups'
-                ? 'text-[#00a884] border-b-2 border-[#00a884]'
-                : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            Groups ({groups.length})
-          </button>
-        </div>
-
-        {/* Search Bar */}
+        {/* Search Bar (searches both) */}
         <div className="p-3 bg-[#202c33]">
           <div className="relative">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -173,7 +269,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
               type="text"
               value={searchQuery}
               onChange={handleSearchChange}
-              placeholder={activeTab === 'users' ? "Search users..." : "Search groups..."}
+              placeholder={"Search users and groups..."}
               className="w-full p-3 pl-12 rounded-lg bg-[#2a3942] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00a884] border-none"
             />
             {searchQuery && (
@@ -187,94 +283,84 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Content Area - show groups first, then users */}
         <div className="flex-1 overflow-y-auto bg-[#111b21]">
-          {activeTab === 'users' ? (
-            /* Users List */
-            filteredUsers.length === 0 ? (
-              <div className="text-center mt-10">
-                <div className="w-16 h-16 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">
-                    {searchQuery ? '🔍' : '👤'}
-                  </span>
-                </div>
-                <p className="text-gray-400">
-                  {searchQuery ? 'No users found' : 'No users found'}
-                </p>
-                {searchQuery && (
-                  <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
-                )}
+          {/* Groups Section */}
+          {filteredGroups.length === 0 ? (
+            <div className="text-center mt-6 px-4">
+              <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl">{searchQuery ? '🔍' : '👥'}</span>
               </div>
-            ) : (
-              filteredUsers.map((u, i) => (
-                <div
-                  key={u + i}
-                  onClick={() => handleUserClick(u)}
-                  className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${u === activeUser && activeChatType === 'individual' ? "bg-[#2a3942]" : ""
-                    }`}
-                >
-                  <div className="relative">
-                    <h2
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white"
-                      style={{ backgroundColor: getRandomColor() }}
-                    >
-                      {u.slice(0, 1).toUpperCase()}
-                    </h2>
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white truncate">{u}</h3>
-                    <p className="text-sm text-gray-400 truncate">
-                      Tap to start conversation
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-400">●</span>
-                </div>
-              ))
-            )
+              <p className="text-gray-400 mb-1">{searchQuery ? 'No groups found' : 'No groups yet'}</p>
+              {searchQuery ? (
+                <p className="text-sm text-gray-500">Try a different search term</p>
+              ) : (
+                <p className="text-sm text-gray-500">Create your first group to get started</p>
+              )}
+            </div>
           ) : (
-            /* Groups List */
-            filteredGroups.length === 0 ? (
-              <div className="text-center mt-10">
-                <div className="w-16 h-16 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">
-                    {searchQuery ? '🔍' : '👥'}
-                  </span>
+            filteredGroups.map((group) => (
+              <div
+                key={group.id}
+                onClick={() => handleGroupClick(group.id)}
+                className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${group.id === activeUser && activeChatType === 'group' ? "bg-[#2a3942]" : ""}
+                `}
+              >
+                <div className="relative">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white bg-purple-600"
+                  >
+                    👥
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
                 </div>
-                <p className="text-gray-400 mb-2">
-                  {searchQuery ? 'No groups found' : 'No groups yet'}
-                </p>
-                {searchQuery ? (
-                  <p className="text-sm text-gray-500">Try a different search term</p>
-                ) : (
-                  <p className="text-sm text-gray-500">Create your first group to get started</p>
-                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-white truncate">{group.name}</h3>
+                  <p className="text-sm text-gray-400 truncate">
+                    {getLastMessagePreview(group.id)}
+                  </p>
+                </div>
               </div>
-            ) : (
-              filteredGroups.map((group) => (
-                <div
-                  key={group.id}
-                  onClick={() => handleGroupClick(group.id)}
-                  className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${group.id === activeUser && activeChatType === 'group' ? "bg-[#2a3942]" : ""
-                    }`}
-                >
-                  <div className="relative">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white bg-purple-600"
-                    >
-                      👥
-                    </div>
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white truncate">{group.name}</h3>
-                    <p className="text-sm text-gray-400 truncate">
-                      {group.members.length} members
-                    </p>
-                  </div>
+            ))
+          )}
+
+          {/* Users List */}
+          {filteredUsers.length === 0 ? (
+            <div className="text-center mt-6 px-4">
+              <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl">{searchQuery ? '🔍' : '👤'}</span>
+              </div>
+              <p className="text-gray-400">{searchQuery ? 'No users found' : 'No users found'}</p>
+              {searchQuery && (
+                <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
+              )}
+            </div>
+          ) : (
+            filteredUsers.map((u, i) => (
+              <div
+                key={u + i}
+                onClick={() => handleUserClick(u)}
+                className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#374248] hover:bg-[#2a3942] transition-colors ${u === activeUser && activeChatType === 'individual' ? "bg-[#2a3942]" : ""}
+                `}
+              >
+                <div className="relative">
+                  <h2
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white"
+                    style={{ backgroundColor: getRandomColor() }}
+                  >
+                    {u.slice(0, 1).toUpperCase()}
+                  </h2>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#111b21]"></div>
                 </div>
-              ))
-            )
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-white truncate">{u}</h3>
+                  <p className="text-sm text-gray-400 truncate">
+                    {getLastMessagePreview(u)}
+                  </p>
+                </div>
+                <span className="text-xs text-gray-400">●</span>
+              </div>
+            ))
           )}
         </div>
       </div>
@@ -308,16 +394,12 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
                       onChange={() => toggleUserSelection(user)}
                       className="w-4 h-4 text-[#00a884] bg-[#374248] border-[#374248] rounded focus:ring-[#00a884] focus:ring-2"
                     />
-                    <label htmlFor={user} className="text-white cursor-pointer flex-1">
-                      {user}
-                    </label>
+                    <label htmlFor={user} className="text-white cursor-pointer flex-1">{user}</label>
                   </div>
                 ))}
               </div>
               {selectedUsers.length > 0 && (
-                <p className="text-xs text-gray-400 mt-2">
-                  Selected: {selectedUsers.join(', ')}
-                </p>
+                <p className="text-xs text-gray-400 mt-2">Selected: {selectedUsers.join(', ')}</p>
               )}
             </div>
 
