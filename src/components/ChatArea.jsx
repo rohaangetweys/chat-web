@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt, FaMicrophone, FaPause } from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
-export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick, onSendMessage }) {
+export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick, onSendMessage, userProfiles }) {
     const [message, setMessage] = useState("");
     const messagesEndRef = useRef(null);
     const [playingAudio, setPlayingAudio] = useState(null);
@@ -91,6 +91,10 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const getProfilePhoto = (username) => {
+        return userProfiles[username]?.profilePhoto || null;
     };
 
     const VoiceMessagePlayer = ({ msg, index }) => {
@@ -249,121 +253,143 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
                             <p className="text-gray-500">Select a contact from the sidebar to start a conversation</p>
                         </div>
                     ) : chat.length > 0 ? (
-                        chat.map((msg, i) => (
-                            <div
-                                key={msg.id || i}
-                                className={`max-w-[85%] md:max-w-[70%] break-all h-auto min-w-[15%] p-3 rounded-2xl shadow-sm ${msg.username === username
-                                    ? "ml-auto bg-[#00a884] text-white"
-                                    : "mr-auto bg-white text-gray-800 border border-gray-200"
-                                    }`}
-                            >
-                                {(msg.username !== username || activeChatType === 'group') && (
-                                    <p className="text-xs text-[#00a884] font-medium mb-1">
-                                        {msg.username}
-                                    </p>
-                                )}
+                        chat.map((msg, i) => {
+                            const isOwnMessage = msg.username === username;
+                            const profilePhoto = getProfilePhoto(msg.username);
 
-                                {msg.type === "image" ? (
-                                    <div className="my-1">
-                                        <div
-                                            className="relative cursor-pointer group"
-                                            onClick={() => onOpenMedia(msg.message, 'image')}
-                                        >
-                                            <Image
-                                                src={msg.message}
-                                                alt={msg.fileName || 'Uploaded image'}
-                                                width={300}
-                                                height={200}
-                                                className="rounded-2xl max-w-full h-auto object-cover transition-transform group-hover:scale-105 border border-gray-200"
-                                                style={{ maxHeight: '300px' }}
-                                            />
-                                        </div>
-                                        {msg.fileName && (
-                                            <p className={`text-xs mt-1 ${msg.username === username ? 'text-gray-200' : 'text-gray-500'}`}>
-                                                {msg.fileName}
+                            return (
+                                <div
+                                    key={msg.id || i}
+                                    className={`max-w-[85%] md:max-w-[70%] break-all h-auto min-w-[15%] p-3 rounded-2xl shadow-sm ${isOwnMessage
+                                        ? "ml-auto bg-[#00a884] text-white"
+                                        : "mr-auto bg-white text-gray-800 border border-gray-200"
+                                        }`}
+                                >
+                                    {(msg.username !== username || activeChatType === 'group') && (
+                                        <div className="flex items-center gap-2 mb-1">
+                                            {profilePhoto ? (
+                                                <div className="w-6 h-6 rounded-full overflow-hidden">
+                                                    <Image
+                                                        src={profilePhoto}
+                                                        alt={msg.username}
+                                                        width={24}
+                                                        height={24}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-6 h-6 rounded-full bg-[#00a884] flex items-center justify-center text-white text-xs font-semibold">
+                                                    {msg.username.slice(0, 1).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-[#00a884] font-medium">
+                                                {msg.username}
                                             </p>
-                                        )}
-                                    </div>
-                                ) : msg.type === "video" ? (
-                                    <div className="my-1">
-                                        <div
-                                            className="relative cursor-pointer group"
-                                            onClick={() => onOpenMedia(msg.message, 'video')}
-                                        >
-                                            <video
-                                                className="rounded-2xl max-w-full h-auto border border-gray-200"
-                                                style={{ maxHeight: '400px' }}
-                                                controls
+                                        </div>
+                                    )}
+
+                                    {msg.type === "image" ? (
+                                        <div className="my-1">
+                                            <div
+                                                className="relative cursor-pointer group"
+                                                onClick={() => onOpenMedia(msg.message, 'image')}
                                             >
-                                                <source src={msg.message} type="video/mp4" />
-                                            </video>
-                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-2xl flex items-center justify-center">
-                                                <div className="group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full p-3">
-                                                    <FaPlay className="text-white" size={16} />
-                                                </div>
+                                                <Image
+                                                    src={msg.message}
+                                                    alt={msg.fileName || 'Uploaded image'}
+                                                    width={300}
+                                                    height={200}
+                                                    className="rounded-2xl max-w-full h-auto object-cover transition-transform group-hover:scale-105 border border-gray-200"
+                                                    style={{ maxHeight: '300px' }}
+                                                />
                                             </div>
+                                            {msg.fileName && (
+                                                <p className={`text-xs mt-1 ${isOwnMessage ? 'text-gray-200' : 'text-gray-500'}`}>
+                                                    {msg.fileName}
+                                                </p>
+                                            )}
                                         </div>
-                                        {msg.fileName && (
-                                            <p className={`text-xs mt-1 ${msg.username === username ? 'text-gray-200' : 'text-gray-500'}`}>
-                                                {msg.fileName}
-                                            </p>
-                                        )}
-                                    </div>
-                                ) : msg.type === "audio" ? (
-                                    <VoiceMessagePlayer msg={msg} index={i} />
-                                ) : msg.type === "file" ? (
-                                    <div className="my-1">
-                                        <div
-                                            className="flex items-center gap-3 p-3 bg-gray-100 rounded-2xl border border-gray-300 hover:bg-gray-200 transition-colors cursor-pointer group"
-                                            onClick={() => handleDocumentClick(msg.message)}
-                                            title="Click to open document"
-                                        >
-                                            <div className="shrink-0">
-                                                {getFileIcon(msg.fileName, msg.format)}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className={`text-sm font-medium truncate ${msg.username === username ? 'text-white' : 'text-gray-800'}`}>
-                                                    {msg.fileName || 'Document'}
-                                                </p>
-                                                <p className={`text-xs ${msg.username === username ? 'text-gray-200' : 'text-gray-600'}`}>
-                                                    {getFileTypeName(msg.fileName, msg.format)}
-                                                </p>
-                                            </div>
-                                            <div className="shrink-0 flex gap-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDownload(msg.message, msg.fileName);
-                                                    }}
-                                                    className={`p-2 rounded-full transition-colors ${msg.username === username
-                                                        ? 'text-gray-200 hover:text-white hover:bg-[#008f70]'
-                                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-300'
-                                                        }`}
-                                                    title="Download file"
+                                    ) : msg.type === "video" ? (
+                                        <div className="my-1">
+                                            <div
+                                                className="relative cursor-pointer group"
+                                                onClick={() => onOpenMedia(msg.message, 'video')}
+                                            >
+                                                <video
+                                                    className="rounded-2xl max-w-full h-auto border border-gray-200"
+                                                    style={{ maxHeight: '400px' }}
+                                                    controls
                                                 >
-                                                    <FaDownload size={16} />
-                                                </button>
-                                                <div className={`p-2 transition-colors ${msg.username === username
-                                                    ? 'text-gray-200 group-hover:text-white'
-                                                    : 'text-gray-400 group-hover:text-[#00a884]'
-                                                    }`}>
-                                                    <FaExternalLinkAlt size={14} />
+                                                    <source src={msg.message} type="video/mp4" />
+                                                </video>
+                                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-2xl flex items-center justify-center">
+                                                    <div className="group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full p-3">
+                                                        <FaPlay className="text-white" size={16} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {msg.fileName && (
+                                                <p className={`text-xs mt-1 ${isOwnMessage ? 'text-gray-200' : 'text-gray-500'}`}>
+                                                    {msg.fileName}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : msg.type === "audio" ? (
+                                        <VoiceMessagePlayer msg={msg} index={i} />
+                                    ) : msg.type === "file" ? (
+                                        <div className="my-1">
+                                            <div
+                                                className="flex items-center gap-3 p-3 bg-gray-100 rounded-2xl border border-gray-300 hover:bg-gray-200 transition-colors cursor-pointer group"
+                                                onClick={() => handleDocumentClick(msg.message)}
+                                                title="Click to open document"
+                                            >
+                                                <div className="shrink-0">
+                                                    {getFileIcon(msg.fileName, msg.format)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`text-sm font-medium truncate ${isOwnMessage ? 'text-white' : 'text-gray-800'}`}>
+                                                        {msg.fileName || 'Document'}
+                                                    </p>
+                                                    <p className={`text-xs ${isOwnMessage ? 'text-gray-200' : 'text-gray-600'}`}>
+                                                        {getFileTypeName(msg.fileName, msg.format)}
+                                                    </p>
+                                                </div>
+                                                <div className="shrink-0 flex gap-1">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDownload(msg.message, msg.fileName);
+                                                        }}
+                                                        className={`p-2 rounded-full transition-colors ${isOwnMessage
+                                                            ? 'text-gray-200 hover:text-white hover:bg-[#008f70]'
+                                                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-300'
+                                                            }`}
+                                                        title="Download file"
+                                                    >
+                                                        <FaDownload size={16} />
+                                                    </button>
+                                                    <div className={`p-2 transition-colors ${isOwnMessage
+                                                        ? 'text-gray-200 group-hover:text-white'
+                                                        : 'text-gray-400 group-hover:text-[#00a884]'
+                                                        }`}>
+                                                        <FaExternalLinkAlt size={14} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <p className={`text-left whitespace-pre-wrap wrap-break-words ${msg.username === username ? 'text-white' : 'text-gray-800'}`}>
-                                        {msg.message}
-                                    </p>
-                                )}
+                                    ) : (
+                                        <p className={`text-left whitespace-pre-wrap wrap-break-words ${isOwnMessage ? 'text-white' : 'text-gray-800'}`}>
+                                            {msg.message}
+                                        </p>
+                                    )}
 
-                                <p className={`text-xs mt-2 text-right ${msg.username === username ? 'text-gray-200' : 'text-gray-500'
-                                    }`}>
-                                    {msg.time}
-                                </p>
-                            </div>
-                        ))
+                                    <p className={`text-xs mt-2 text-right ${isOwnMessage ? 'text-gray-200' : 'text-gray-500'
+                                        }`}>
+                                        {msg.time}
+                                    </p>
+                                </div>
+                            );
+                        })
                     ) : (
                         <div className="text-center mt-20">
                             <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">

@@ -2,11 +2,12 @@
 import { FaSearch, FaUsers } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
-import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database';
+import { ref, onValue, query, orderByKey, limitToLast, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
+import Image from 'next/image';
 
-export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts }) {
+export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles }) {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -68,7 +69,15 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     return users.filter(u => u !== username);
   }, [users, username]);
 
-  // --- Last Message Fetching Logic (Kept unchanged as it's functional) ---
+  const getProfilePhoto = (username) => {
+    return userProfiles[username]?.profilePhoto || null;
+  };
+
+  const getDisplayName = (username) => {
+    return username; // Since we're only using username now
+  };
+
+  // --- Last Message Fetching Logic ---
 
   // Fetch last messages for individual chats with timestamps
   useEffect(() => {
@@ -173,7 +182,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     };
   }, [groups, username]);
 
-  // Sort contacts by last message timestamp (Kept unchanged)
+  // Sort contacts by last message timestamp
   useEffect(() => {
     const allContacts = [];
 
@@ -183,7 +192,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       allContacts.push({
         type: 'user',
         id: user,
-        name: user,
+        name: getDisplayName(user),
+        username: user,
         lastMessage: lastMessage,
         timestamp: lastMessage?.timestamp || 0,
         unreadCount: unreadCounts[user] || 0
@@ -223,7 +233,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     setSortedContacts(sorted);
   }, [availableUsers, groups, lastMessages, unreadCounts]);
 
-  // Filter contacts based on active filter (Kept unchanged)
+  // Filter contacts based on active filter
   const filteredContacts = useMemo(() => {
     if (searchQuery.trim() !== '') {
       // If searching, use the existing search logic
@@ -244,7 +254,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         const contact = {
           type: 'user',
           id: user,
-          name: user,
+          name: getDisplayName(user),
+          username: user,
           lastMessage: lastMessages[user],
           unreadCount: unreadCounts[user] || 0
         };
@@ -319,7 +330,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     }
   };
 
-  // --- Search and Filter Effects (Kept unchanged) ---
+  // --- Search and Filter Effects ---
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -360,6 +371,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         (contact.type === 'group' && activeChatType === 'group'));
 
     const hasUnread = contact.unreadCount > 0;
+    const profilePhoto = contact.type === 'user' ? getProfilePhoto(contact.id) : null;
 
     return (
       <div
@@ -375,12 +387,24 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       >
         <div className="relative">
           {contact.type === 'user' ? (
-            <h2
-              className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white shadow-md"
-              style={{ backgroundColor: getRandomColor() }}
-            >
-              {contact.name.slice(0, 1).toUpperCase()}
-            </h2>
+            profilePhoto ? (
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#00a884] shadow-md">
+                <Image
+                  src={profilePhoto}
+                  alt={contact.name}
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <h2
+                className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white shadow-md"
+                style={{ backgroundColor: getRandomColor() }}
+              >
+                {contact.name.slice(0, 1).toUpperCase()}
+              </h2>
+            )
           ) : (
             <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white bg-indigo-500 shadow-md">
               <HiOutlineUserGroup size={24} />
@@ -426,9 +450,21 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       <div className="w-full h-full bg-white border-r border-gray-200 flex flex-col shadow-lg">
         {/* User Header */}
         <div className="p-4 bg-gray-50 flex items-center gap-3 border-b border-gray-200 shadow-sm">
-          <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold shadow-md">
-            {username?.charAt(0)?.toUpperCase() || "U"}
-          </div>
+          {getProfilePhoto(username) ? (
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#00a884]">
+              <Image
+                src={getProfilePhoto(username)}
+                alt={username}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold shadow-md">
+              {username?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-800 truncate">{username}</h2>
             <p className="text-xs text-gray-500 truncate">Online</p>
@@ -567,7 +603,9 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
                       readOnly // Make read-only as click handler is on the div
                       className="w-4 h-4 text-[#00a884] bg-white border-gray-300 rounded focus:ring-[#00a884] focus:ring-2"
                     />
-                    <label htmlFor={`group-user-${user}`} className="text-gray-800 cursor-pointer flex-1">{user}</label>
+                    <label htmlFor={`group-user-${user}`} className="text-gray-800 cursor-pointer flex-1">
+                      {user}
+                    </label>
                   </div>
                 ))}
               </div>

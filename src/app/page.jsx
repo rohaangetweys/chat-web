@@ -14,6 +14,7 @@ import FileTypeModal from "@/components/FileTypeModal";
 import { MdOutlineNotificationsActive } from "react-icons/md";
 import { FaUserCircle } from "react-icons/fa";
 import { HiOutlineUserGroup } from "react-icons/hi2";
+import Image from 'next/image';
 
 export default function ChatUI() {
     const router = useRouter();
@@ -35,6 +36,7 @@ export default function ChatUI() {
     const [showFileTypeModal, setShowFileTypeModal] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+    const [userProfiles, setUserProfiles] = useState({});
 
     const fileInputRef = useRef(null);
     const profileDropdownRef = useRef(null);
@@ -98,32 +100,83 @@ export default function ChatUI() {
         };
     }, [router]);
 
-    const username = user?.displayName
-        ? user.displayName
-        : user?.email
-            ? user.email.split("@")[0]
-            : "";
+    // Get username from user data stored in database
+    const [username, setUsername] = useState("");
+
+    useEffect(() => {
+        if (!user) return;
+
+        // Fetch user data from database to get the username
+        const fetchUserData = async () => {
+            try {
+                // First try to find user by UID
+                const usersRef = ref(db, 'users');
+                onValue(usersRef, (snapshot) => {
+                    let foundUsername = '';
+                    const profiles = {};
+                    
+                    snapshot.forEach((child) => {
+                        const userData = child.val();
+                        profiles[child.key] = userData;
+                        
+                        if (userData.uid === user.uid) {
+                            foundUsername = child.key; // The key is the username
+                        }
+                    });
+                    
+                    setUserProfiles(profiles);
+                    
+                    if (foundUsername) {
+                        setUsername(foundUsername);
+                    } else {
+                        // Fallback to displayName or email prefix if username not found
+                        setUsername(user.displayName || (user.email ? user.email.split("@")[0] : ""));
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                // Fallback to displayName or email prefix
+                setUsername(user.displayName || (user.email ? user.email.split("@")[0] : ""));
+            }
+        };
+
+        fetchUserData();
+    }, [user]);
 
     useEffect(() => {
         if (!username) return;
         const userRef = ref(db, `users/${username}`);
-        set(userRef, true).catch((err) => {
-            console.error("failed to add user to users/:", err);
+        set(userRef, {
+            uid: user?.uid,
+            email: user?.email,
+            username: username,
+            profilePhoto: user?.photoURL,
+            lastSeen: new Date().toISOString()
+        }, { merge: true }).catch((err) => {
+            console.error("failed to update user data:", err);
         });
-    }, [username]);
+    }, [username, user]);
 
+    // Fetch all user profiles
     useEffect(() => {
         const usersRef = ref(db, "users/");
         const unsub = onValue(usersRef, (snapshot) => {
             const list = [];
+            const profiles = {};
+            
             snapshot.forEach((child) => {
-                if (child.key) list.push(child.key);
+                if (child.key && child.key !== username) {
+                    list.push(child.key);
+                    profiles[child.key] = child.val();
+                }
             });
+            
             setUsers(list);
+            setUserProfiles(prev => ({ ...prev, ...profiles }));
         });
 
         return () => unsub();
-    }, []);
+    }, [username]);
 
     useEffect(() => {
         if (!username) return;
@@ -576,6 +629,10 @@ export default function ChatUI() {
         }, 1000);
     };
 
+    const getProfilePhoto = (username) => {
+        return userProfiles[username]?.profilePhoto || null;
+    };
+
     if (authChecking) {
         return (
             <div className="h-full w-full flex items-center justify-center bg-gray-50">
@@ -632,7 +689,20 @@ export default function ChatUI() {
                             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                             className="p-2 rounded-full text-[#00a884] hover:bg-gray-200 transition-colors flex items-center gap-2"
                         >
-                            <FaUserCircle className="text-[#00a884] text-[26px]" />
+                            {user?.photoURL ? (
+                                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#00a884]">
+                                    <Image
+                                        src={user.photoURL}
+                                        alt="Profile"
+                                        width={32}
+                                        height={32}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <FaUserCircle className="text-[#00a884] text-[26px]" />
+                            )}
+                            <span className="text-sm font-medium hidden md:block">{username}</span>
                         </button>
                         
                         {/* Dropdown Menu */}
@@ -640,6 +710,7 @@ export default function ChatUI() {
                             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                                 <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                                     <p className="font-medium">Hello, {username}</p>
+                                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                                 </div>
                                 <button
                                     onClick={handleLogout}
@@ -668,6 +739,7 @@ export default function ChatUI() {
                         setActiveChatType={setActiveChatType}
                         onCreateGroup={createGroupChat}
                         unreadCounts={unreadCounts}
+                        userProfiles={userProfiles}
                     />
                 </div>
 
@@ -686,10 +758,25 @@ export default function ChatUI() {
                                     </button>
                                 )}
                                 <div className="relative">
-                                    <div className={`w-10 h-10 rounded-full flex justify-center items-center text-white font-semibold ${activeChatType === 'group' ? 'bg-indigo-500' : 'bg-[#00a884]'
-                                        }`}>
-                                        {activeChatType === 'group' ? <HiOutlineUserGroup size={22} /> : activeUser.slice(0, 1).toUpperCase()}
-                                    </div>
+                                    {activeChatType === 'group' ? (
+                                        <div className="w-10 h-10 rounded-full bg-indigo-500 flex justify-center items-center text-white">
+                                            <HiOutlineUserGroup size={22} />
+                                        </div>
+                                    ) : getProfilePhoto(activeUser) ? (
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#00a884]">
+                                            <Image
+                                                src={getProfilePhoto(activeUser)}
+                                                alt={activeUser}
+                                                width={40}
+                                                height={40}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold">
+                                            {activeUser.slice(0, 1).toUpperCase()}
+                                        </div>
+                                    )}
                                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-white"></div>
                                 </div>
                                 <div>
@@ -734,6 +821,7 @@ export default function ChatUI() {
                         onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
                         onPaperClipClick={handlePaperClipClick}
                         onSendMessage={sendMessage}
+                        userProfiles={userProfiles}
                     />
 
                     {/* File Type Selection Modal */}
