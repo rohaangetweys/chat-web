@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { FaPaperPlane, FaFilePdf, FaFileWord, FaFileArchive, FaFile, FaDownload, FaPlay, FaExternalLinkAlt, FaMicrophone, FaPause } from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
-export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder }) {
+export default function ChatArea({ activeUser, chat, username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick }) {
     const [message, setMessage] = useState("");
     const messagesEndRef = useRef(null);
     const [playingAudio, setPlayingAudio] = useState(null);
@@ -46,14 +46,6 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
             console.error("sendMessage error:", err);
             toast.error("Failed to send message");
         }
-    };
-
-    const handlePaperClipClick = () => {
-        if (!activeUser) {
-            toast.error('Please select a user to chat with');
-            return;
-        }
-        fileInputRef.current?.click();
     };
 
     const handleVoiceRecordClick = () => {
@@ -407,7 +399,7 @@ export default function ChatArea({ activeUser, chat, username, uploading, fileIn
             <div className="p-3 bg-[#202c33] border-t border-[#374248]">
                 <div className="flex items-center gap-2 max-w-4xl mx-auto">
                     <button
-                        onClick={handlePaperClipClick}
+                        onClick={onPaperClipClick}
                         disabled={!activeUser || uploading}
                         className={`p-3 rounded-full transition-all ${!activeUser || uploading
                             ? "text-gray-500 cursor-not-allowed"

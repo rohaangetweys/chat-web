@@ -10,6 +10,7 @@ import Sidebar from "@/components/Sidebar";
 import ChatArea from "@/components/ChatArea";
 import MediaModal from "@/components/MediaModal";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import FileTypeModal from "@/components/FileTypeModal";
 
 export default function ChatUI() {
     const router = useRouter();
@@ -28,6 +29,7 @@ export default function ChatUI() {
     const [isMobileView, setIsMobileView] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+    const [showFileTypeModal, setShowFileTypeModal] = useState(false);
 
     const fileInputRef = useRef(null);
 
@@ -204,34 +206,29 @@ export default function ChatUI() {
         }
     };
 
-    const handleFileUpload = async (event) => {
-        const file = event.target.files?.[0];
+    const handleFileUpload = async (file, fileType = null) => {
         if (!file) return;
 
+        // File size validations
         if (file.type.startsWith('audio/') && file.size > 10 * 1024 * 1024) {
             toast.error('Audio size should be less than 10MB');
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
         if (file.type.startsWith('image/') && file.size > 5 * 1024 * 1024) {
             toast.error('Image size should be less than 5MB');
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
         if (file.type.startsWith('video/') && file.size > 150 * 1024 * 1024) {
             toast.error('Video size should be less than 150MB');
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && file.size > 50 * 1024 * 1024) {
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !file.type.startsWith('audio/') && file.size > 50 * 1024 * 1024) {
             toast.error('File size should be less than 50MB');
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
         if (!activeUser) {
             toast.error('Select a user to send file');
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
@@ -274,6 +271,12 @@ export default function ChatUI() {
                 fileInputRef.current.value = '';
             }
         }
+    };
+
+    const handleFileInputChange = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        await handleFileUpload(file);
     };
 
     const handleVoiceRecordComplete = async (audioBlob, duration) => {
@@ -360,6 +363,41 @@ export default function ChatUI() {
         setActiveUser("");
     };
 
+    const handlePaperClipClick = () => {
+        if (!activeUser) {
+            toast.error('Please select a user to chat with');
+            return;
+        }
+        setShowFileTypeModal(true);
+    };
+
+    const handleFileTypeSelect = (fileType) => {
+        setShowFileTypeModal(false);
+
+        switch (fileType) {
+            case 'image':
+                fileInputRef.current.accept = 'image/*';
+                break;
+            case 'video':
+                fileInputRef.current.accept = 'video/*';
+                break;
+            case 'document':
+                fileInputRef.current.accept = '.pdf,.doc,.docx,.txt,.zip,.rar,.7z,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                break;
+            default:
+                fileInputRef.current.accept = '*/*';
+        }
+
+        fileInputRef.current?.click();
+
+        // Reset accept attribute after click
+        setTimeout(() => {
+            if (fileInputRef.current) {
+                fileInputRef.current.accept = 'image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.zip,.txt';
+            }
+        }, 1000);
+    };
+
     if (authChecking) {
         return (
             <div className="h-screen flex items-center justify-center bg-[#111b21]">
@@ -392,7 +430,7 @@ export default function ChatUI() {
             <input
                 type="file"
                 ref={fileInputRef}
-                onChange={handleFileUpload}
+                onChange={handleFileInputChange}
                 accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.zip,.txt"
                 className="hidden"
                 disabled={uploading || !activeUser}
@@ -474,7 +512,16 @@ export default function ChatUI() {
                     onOpenMedia={openMediaModal}
                     activeChatType={activeChatType}
                     onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
+                    onPaperClipClick={handlePaperClipClick}
                 />
+
+                {/* File Type Selection Modal */}
+                {showFileTypeModal && (
+                    <FileTypeModal
+                        onClose={() => setShowFileTypeModal(false)}
+                        onFileTypeSelect={handleFileTypeSelect}
+                    />
+                )}
 
                 {/* Voice Recorder Modal */}
                 {showVoiceRecorder && (
