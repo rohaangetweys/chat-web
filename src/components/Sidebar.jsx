@@ -17,6 +17,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
   const [filteredGroups, setFilteredGroups] = useState([]);
   const [lastMessages, setLastMessages] = useState({});
   const [sortedContacts, setSortedContacts] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'unread', 'groups'
 
   const handleLogout = async () => {
     const res = await logout();
@@ -232,6 +233,49 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     setSortedContacts(sorted);
   }, [availableUsers, groups, lastMessages, unreadCounts]);
 
+  // Filter contacts based on active filter
+  const filteredContacts = useMemo(() => {
+    if (searchQuery.trim() !== '') {
+      // If searching, use the existing search logic
+      const searchResults = [];
+      
+      filteredGroups.forEach((group) => {
+        const contact = {
+          type: 'group',
+          id: group.id,
+          name: group.name,
+          lastMessage: lastMessages[group.id],
+          unreadCount: unreadCounts[group.id] || 0
+        };
+        searchResults.push(contact);
+      });
+      
+      filteredUsers.forEach((user) => {
+        const contact = {
+          type: 'user',
+          id: user,
+          name: user,
+          lastMessage: lastMessages[user],
+          unreadCount: unreadCounts[user] || 0
+        };
+        searchResults.push(contact);
+      });
+      
+      return searchResults;
+    }
+
+    // Apply filters when not searching
+    switch (activeFilter) {
+      case 'unread':
+        return sortedContacts.filter(contact => contact.unreadCount > 0);
+      case 'groups':
+        return sortedContacts.filter(contact => contact.type === 'group');
+      case 'all':
+      default:
+        return sortedContacts;
+    }
+  }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts]);
+
   const getLastMessagePreview = (target) => {
     const lastMessage = lastMessages[target];
     if (!lastMessage) return 'No messages yet';
@@ -365,8 +409,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
             </p>
             
             {hasUnread && (
-              <div className="flex-shrink-0 ml-2">
-                <div className="bg-[#00a884] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 font-medium">
+              <div className="shrink-0 ml-2">
+                <div className="bg-[#00a884] text-white text-xs rounded-full min-w-20px h-5 flex items-center justify-center px-1.5 font-medium">
                   {contact.unreadCount > 99 ? '99+' : contact.unreadCount}
                 </div>
               </div>
@@ -405,7 +449,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           </button>
         </div>
 
-        {/* Search Bar (searches both) */}
+        {/* Search Bar */}
         <div className="p-3 bg-[#202c33]">
           <div className="relative">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -427,59 +471,92 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           </div>
         </div>
 
-        {/* Content Area - show sorted contacts */}
+        {/* Filter Tabs */}
+        <div className="flex pl-4 gap-2 pb-2">
+          <button
+            onClick={() => setActiveFilter('all')}
+            className={`h-10 px-4 text-sm font-medium transition-colors rounded-full ${
+              activeFilter === 'all' 
+                ? 'bg-[#00a884]' 
+                : 'bg-transparent border border-gray-600 text-gray-400'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setActiveFilter('unread')}
+            className={`h-10 px-4 rounded-full text-sm font-medium transition-colors relative ${
+              activeFilter === 'unread' 
+                ? 'bg-[#00a884]' 
+                : 'bg-transparent border border-gray-600 text-gray-400'
+            }`}
+          >
+            Unread
+            {sortedContacts.some(contact => contact.unreadCount > 0) && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#00a884] rounded-full"></span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveFilter('groups')}
+            className={`h-10 px-4 rounded-full text-sm font-medium transition-colors ${
+              activeFilter === 'groups' 
+                ? 'bg-[#00a884]' 
+                : 'bg-transparent border border-gray-600 text-gray-400'
+            }`}
+          >
+            Groups
+          </button>
+        </div>
+
+        {/* Content Area - show filtered contacts */}
         <div className="flex-1 overflow-y-auto bg-[#111b21]">
-          {searchQuery ? (
+          {searchQuery || filteredContacts.length > 0 ? (
             <>
-              {/* When searching, show filtered results */}
-              {filteredGroups.length === 0 && filteredUsers.length === 0 ? (
+              {/* Show filtered results */}
+              {filteredContacts.length === 0 ? (
                 <div className="text-center mt-6 px-4">
                   <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-xl">🔍</span>
+                    {activeFilter === 'unread' ? (
+                      <span className="text-xl">📭</span>
+                    ) : activeFilter === 'groups' ? (
+                      <span className="text-xl">👥</span>
+                    ) : (
+                      <span className="text-xl">🔍</span>
+                    )}
                   </div>
-                  <p className="text-gray-400 mb-1">No contacts found</p>
-                  <p className="text-sm text-gray-500">Try a different search term</p>
+                  <p className="text-gray-400 mb-1">
+                    {searchQuery 
+                      ? 'No contacts found' 
+                      : activeFilter === 'unread' 
+                        ? 'No unread messages' 
+                        : activeFilter === 'groups' 
+                          ? 'No groups yet' 
+                          : 'No contacts yet'
+                    }
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {searchQuery 
+                      ? 'Try a different search term' 
+                      : activeFilter === 'unread' 
+                        ? 'You\'re all caught up!' 
+                        : activeFilter === 'groups' 
+                          ? 'Create a group to get started' 
+                          : 'Start a conversation or create a group'
+                    }
+                  </p>
                 </div>
               ) : (
-                <>
-                  {filteredGroups.map((group) => {
-                    const contact = {
-                      type: 'group',
-                      id: group.id,
-                      name: group.name,
-                      lastMessage: lastMessages[group.id],
-                      unreadCount: unreadCounts[group.id] || 0
-                    };
-                    return renderContactItem(contact);
-                  })}
-                  {filteredUsers.map((user) => {
-                    const contact = {
-                      type: 'user',
-                      id: user,
-                      name: user,
-                      lastMessage: lastMessages[user],
-                      unreadCount: unreadCounts[user] || 0
-                    };
-                    return renderContactItem(contact);
-                  })}
-                </>
+                filteredContacts.map(renderContactItem)
               )}
             </>
           ) : (
-            <>
-              {/* When not searching, show sorted contacts */}
-              {sortedContacts.length === 0 ? (
-                <div className="text-center mt-6 px-4">
-                  <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-xl">👥</span>
-                  </div>
-                  <p className="text-gray-400 mb-1">No contacts yet</p>
-                  <p className="text-sm text-gray-500">Start a conversation or create a group</p>
-                </div>
-              ) : (
-                sortedContacts.map(renderContactItem)
-              )}
-            </>
+            <div className="text-center mt-6 px-4">
+              <div className="w-12 h-12 bg-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-xl">👥</span>
+              </div>
+              <p className="text-gray-400 mb-1">No contacts yet</p>
+              <p className="text-sm text-gray-500">Start a conversation or create a group</p>
+            </div>
           )}
         </div>
       </div>
