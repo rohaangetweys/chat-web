@@ -32,7 +32,6 @@ export default function AppHeader({ user, username, handleLogout }) {
             </div>
 
             <div className="flex items-center gap-3">
-                {/* Theme Toggle Button */}
                 <button
                     onClick={toggleTheme}
                     className={`p-2 rounded-full transition-colors ${isDark

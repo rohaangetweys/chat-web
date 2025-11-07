@@ -34,7 +34,7 @@ export default function FileTypeModal({ onClose, onFileTypeSelect }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/85 bg-opacity-40 flex items-center justify-center z-50 p-4">
             <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-sm w-full mx-auto`}>
                 <div className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                     <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Choose File Type</h3>
