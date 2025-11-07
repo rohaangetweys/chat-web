@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebaseConfig';
 import SidebarHeader from './SidebarHeader';
 import SidebarSearch from './SidebarSearch';
 import SidebarFilters from './SidebarFilters';
