@@ -1,6 +1,7 @@
 import { ref, set, get, serverTimestamp, onDisconnect } from "@firebase/database";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
-import { db, auth } from "./firebase-config";
+import { auth, db } from "./firebaseConfig";
+
 
 async function uploadProfilePhoto(file) {
     const formData = new FormData();
