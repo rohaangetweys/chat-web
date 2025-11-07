@@ -57,7 +57,6 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
             onClick={handleBackdropClick}
         >
             <div className="relative max-w-4xl max-h-full w-full flex flex-col items-center">
-                {/* Close & Download Buttons */}
                 <div className="absolute -top-12 right-0 flex items-center gap-4">
                     <button
                         onClick={handleDownload}
@@ -75,7 +74,6 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
                     </button>
                 </div>
 
-                {/* Media Preview */}
                 <div className="bg-transparent rounded-lg overflow-hidden">
                     {type === 'image' ? (
                         <img
@@ -95,7 +93,6 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
                     ) : null}
                 </div>
 
-                {/* Click outside to close */}
                 <div className="absolute inset-0 -z-10" onClick={onClose} />
             </div>
         </div>

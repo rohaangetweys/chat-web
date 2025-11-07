@@ -1,4 +1,4 @@
-import ChatPage from '@/components/chatArea/MainPage'
+import ChatPage from '@/components/MainPage'
 import React from 'react'
 
 export default function HomePage() {

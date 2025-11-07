@@ -1,13 +1,17 @@
+'use client';
+import { useTheme } from '@/contexts/ThemeContext';
 import React from 'react';
 
 export default function EmptyChat() {
+    const { isDark } = useTheme();
+
     return (
         <div className="text-center mt-20">
-            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <div className={`w-24 h-24 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner`}>
                 <span className="text-4xl text-gray-400">💬</span>
             </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">Welcome to Chat</h3>
-            <p className="text-gray-500">Select a contact from the sidebar to start a conversation</p>
+            <h3 className={`text-xl font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Welcome to Chat</h3>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>Select a contact from the sidebar to start a conversation</p>
         </div>
     );
 }

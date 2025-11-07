@@ -1,5 +1,5 @@
 "use client";
-
+import { useTheme } from "@/contexts/ThemeContext";
 import { useEffect, useState, useRef } from "react";
 
 export default function VoiceRecorder({ onRecordingComplete, onClose }) {
@@ -10,6 +10,8 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const durationIntervalRef = useRef(null);
+
+    const { isDark } = useTheme();
 
     const startRecording = async () => {
         setIsRecording(true);
@@ -109,12 +111,12 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
 
     return (
         <div className="fixed inset-0 bg-black/85 bg-opacity-40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm mx-auto shadow-2xl">
+            <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-sm mx-auto shadow-2xl`}>
                 <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-xl font-bold text-gray-800">Voice Message</h3>
+                    <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Voice Message</h3>
                     <button
                         onClick={handleCancel}
-                        className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-100"
+                        className={`${isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'} transition-colors p-1 rounded-full`}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -122,9 +124,9 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                     </button>
                 </div>
 
-                <div className="bg-gray-100 rounded-lg p-4 mb-6 border border-gray-200">
+                <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'} rounded-lg p-4 mb-6 border`}>
                     <div className="flex justify-between items-center mb-3">
-                        <p className={`text-sm font-medium ${isRecording ? 'text-[#00a884]' : 'text-gray-700'}`}>
+                        <p className={`text-sm font-medium ${isRecording ? 'text-[#00a884]' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                             {recordingComplete ? "Recording complete" : isRecording ? "Recording..." : "Ready to record"}
                         </p>
                         {isRecording && (
@@ -180,7 +182,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                         <div className="flex gap-3">
                             <button
                                 onClick={startRecording}
-                                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium border border-gray-300"
+                                className={`flex-1 py-3 ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 border-gray-300'} rounded-lg transition-colors font-medium border`}
                             >
                                 Record Again
                             </button>
@@ -195,7 +197,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
 
                     <button
                         onClick={handleCancel}
-                        className="w-full py-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
+                        className={`w-full py-2 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'} transition-colors font-medium`}
                     >
                         Cancel
                     </button>

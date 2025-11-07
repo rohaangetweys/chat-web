@@ -2,20 +2,22 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/sidebar/Sidebar';
 import ChatArea from '@/components/chatArea/ChatArea';
-import AppHeader from '@/components/chatPage/AppHeader';
-import ModalsManager from '@/components/chatPage/ModalsManager';
+import AppHeader from '@/components/chatArea/AppHeader';
+import ModalsManager from '@/components/chatArea/ModalsManager';
 import useAuth from '@/hooks/chatPage/useAuth';
 import useProfiles from '@/hooks/chatPage/useProfiles';
 import useGroups from '@/hooks/chatPage/useGroups';
 import useChatHandlers from '@/hooks/chatPage/useChatHandlers';
 import { useRouter } from 'next/navigation';
 import { Toaster, toast } from 'react-hot-toast';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ChatPage() {
     const router = useRouter();
     const { user, authChecking, handleLogout } = useAuth();
     const { users, userProfiles, onlineStatus, username, setUsername } = useProfiles(user);
     const { groups } = useGroups(username);
+    const { isDark } = useTheme();
 
     const [showSidebar, setShowSidebar] = useState(true);
 
@@ -74,7 +76,7 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full 2xl:px-20 2xl:py-10 sm:px-10 sm:py-5 border bg-gray-300 text-gray-800 overflow-hidden justify-center items-center">
+        <div className={`flex flex-col h-full w-full 2xl:px-20 2xl:py-10 sm:px-10 sm:py-5 ${isDark ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'} overflow-hidden justify-center items-center`}>
             <Toaster
                 position="top-center"
                 reverseOrder={false}
@@ -98,7 +100,7 @@ export default function ChatPage() {
 
             <AppHeader user={user} username={username} handleLogout={handleLogout} />
 
-            <div className="flex w-full h-full overflow-hidden border border-gray-300 gap-4">
+            <div className={`flex w-full h-full overflow-hidden border ${isDark ? 'border-gray-600 gap-0! rounded-3xl' : 'border-gray-300'} gap-4`}>
                 <div className={`flex rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-1/4'}`}>
                     <Sidebar
                         activeUser={activeUser}
@@ -116,7 +118,7 @@ export default function ChatPage() {
                     />
                 </div>
 
-                <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col bg-gray-50`}>
+                <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <ChatArea
                         fileInputRef={fileInputRef}
                         activeUser={activeUser}

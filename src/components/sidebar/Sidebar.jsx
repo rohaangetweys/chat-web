@@ -8,6 +8,7 @@ import SidebarFilters from './SidebarFilters';
 import ContactList from './ContactList';
 import GroupModal from './GroupModal';
 import { formatLastMessageTime, getLastMessagePreview } from './utils';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles, onlineStatus }) {
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -19,6 +20,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
   const [lastMessages, setLastMessages] = useState({});
   const [sortedContacts, setSortedContacts] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
+  const { isDark } = useTheme();
 
   const handleUserClick = (user) => {
     setActiveUser(user, 'individual');
@@ -205,11 +207,11 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
   return (
     <>
-      <div className="w-full h-full bg-white border-r border-gray-200 flex flex-col shadow-lg">
+      <div className={`w-full h-full ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-r flex flex-col shadow-lg`}>
         <SidebarHeader username={username} getProfilePhoto={getProfilePhoto} />
         <SidebarSearch searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} />
         <SidebarFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
           <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={getProfilePhoto} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} />
         </div>
       </div>
