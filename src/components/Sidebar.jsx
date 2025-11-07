@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
 import Image from 'next/image';
 
-export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles }) {
+export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles, onlineStatus }) {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -196,7 +196,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         username: user,
         lastMessage: lastMessage,
         timestamp: lastMessage?.timestamp || 0,
-        unreadCount: unreadCounts[user] || 0
+        unreadCount: unreadCounts[user] || 0,
+        online: onlineStatus[user]?.online || false
       });
     });
 
@@ -231,7 +232,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     });
 
     setSortedContacts(sorted);
-  }, [availableUsers, groups, lastMessages, unreadCounts]);
+  }, [availableUsers, groups, lastMessages, unreadCounts, onlineStatus]);
 
   // Filter contacts based on active filter
   const filteredContacts = useMemo(() => {
@@ -257,7 +258,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           name: getDisplayName(user),
           username: user,
           lastMessage: lastMessages[user],
-          unreadCount: unreadCounts[user] || 0
+          unreadCount: unreadCounts[user] || 0,
+          online: onlineStatus[user]?.online || false
         };
         searchResults.push(contact);
       });
@@ -275,7 +277,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       default:
         return sortedContacts;
     }
-  }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts]);
+  }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus]);
 
   const getLastMessagePreview = (target) => {
     const lastMessage = lastMessages[target];
@@ -411,7 +413,9 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
             </div>
           )}
           {/* Online/Active status - subtle in light theme */}
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#00a884] rounded-full border-2 border-white"></div>
+          {contact.type === 'user' && contact.online && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -467,7 +471,10 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
           )}
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-800 truncate">{username}</h2>
-            <p className="text-xs text-gray-500 truncate">Online</p>
+            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Online
+            </p>
           </div>
         </div>
 
@@ -606,6 +613,9 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
                     <label htmlFor={`group-user-${user}`} className="text-gray-800 cursor-pointer flex-1">
                       {user}
                     </label>
+                    {onlineStatus[user]?.online && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Online"></div>
+                    )}
                   </div>
                 ))}
               </div>

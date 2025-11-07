@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { ref, onValue, push, set } from "firebase/database";
+import { ref, onValue, push, set, onDisconnect, serverTimestamp } from "firebase/database";
 import { auth, db, logout } from "@/lib/firebase";
 import { Toaster, toast } from "react-hot-toast";
 import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
@@ -37,6 +37,7 @@ export default function ChatUI() {
     const [unreadCounts, setUnreadCounts] = useState({});
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
     const [userProfiles, setUserProfiles] = useState({});
+    const [onlineStatus, setOnlineStatus] = useState({});
 
     const fileInputRef = useRef(null);
     const profileDropdownRef = useRef(null);
@@ -114,10 +115,15 @@ export default function ChatUI() {
                 onValue(usersRef, (snapshot) => {
                     let foundUsername = '';
                     const profiles = {};
+                    const status = {};
                     
                     snapshot.forEach((child) => {
                         const userData = child.val();
                         profiles[child.key] = userData;
+                        status[child.key] = {
+                            online: userData.online || false,
+                            lastSeen: userData.lastSeen || null
+                        };
                         
                         if (userData.uid === user.uid) {
                             foundUsername = child.key; // The key is the username
@@ -125,6 +131,7 @@ export default function ChatUI() {
                     });
                     
                     setUserProfiles(profiles);
+                    setOnlineStatus(status);
                     
                     if (foundUsername) {
                         setUsername(foundUsername);
@@ -143,18 +150,50 @@ export default function ChatUI() {
         fetchUserData();
     }, [user]);
 
+    // Set up online status and presence tracking
     useEffect(() => {
-        if (!username) return;
+        if (!username || !user) return;
+
         const userRef = ref(db, `users/${username}`);
+        
+        // Set user as online
         set(userRef, {
             uid: user?.uid,
             email: user?.email,
             username: username,
             profilePhoto: user?.photoURL,
-            lastSeen: new Date().toISOString()
+            online: true,
+            lastSeen: serverTimestamp()
         }, { merge: true }).catch((err) => {
             console.error("failed to update user data:", err);
         });
+
+        // Set up onDisconnect to mark user as offline when they disconnect
+        const userStatusRef = ref(db, `users/${username}`);
+        onDisconnect(userStatusRef).update({
+            online: false,
+            lastSeen: serverTimestamp()
+        });
+
+        // Listen for online status changes of all users
+        const usersRef = ref(db, 'users');
+        const unsub = onValue(usersRef, (snapshot) => {
+            const status = {};
+            snapshot.forEach((child) => {
+                const userData = child.val();
+                status[child.key] = {
+                    online: userData.online || false,
+                    lastSeen: userData.lastSeen || null
+                };
+            });
+            setOnlineStatus(status);
+        });
+
+        return () => {
+            unsub();
+            // Clean up onDisconnect when component unmounts
+            onDisconnect(userStatusRef).cancel();
+        };
     }, [username, user]);
 
     // Fetch all user profiles
@@ -633,6 +672,52 @@ export default function ChatUI() {
         return userProfiles[username]?.profilePhoto || null;
     };
 
+    // Function to format last seen time
+    const formatLastSeen = (lastSeen) => {
+        if (!lastSeen) return 'Unknown';
+        
+        const lastSeenDate = new Date(lastSeen);
+        const now = new Date();
+        const diffInMs = now - lastSeenDate;
+        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+        if (diffInMinutes < 1) {
+            return 'Just now';
+        } else if (diffInMinutes < 60) {
+            return `Last active ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+        } else if (diffInHours < 24) {
+            return `Last active ${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+        } else if (diffInDays < 7) {
+            return `Last active ${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+        } else {
+            return `Last active on ${lastSeenDate.toLocaleDateString()}`;
+        }
+    };
+
+    // Function to get status display for active user
+    const getActiveUserStatus = () => {
+        if (activeChatType === 'group') {
+            const group = groups.find(g => g.id === activeUser);
+            const memberCount = group?.members?.length || 0;
+            return `${memberCount} members`;
+        }
+
+        if (!activeUser || !onlineStatus[activeUser]) {
+            return 'Unknown';
+        }
+
+        const userStatus = onlineStatus[activeUser];
+        if (userStatus.online) {
+            return 'Online';
+        } else if (userStatus.lastSeen) {
+            return formatLastSeen(userStatus.lastSeen);
+        } else {
+            return 'Offline';
+        }
+    };
+
     if (authChecking) {
         return (
             <div className="h-full w-full flex items-center justify-center bg-gray-50">
@@ -740,6 +825,7 @@ export default function ChatUI() {
                         onCreateGroup={createGroupChat}
                         unreadCounts={unreadCounts}
                         userProfiles={userProfiles}
+                        onlineStatus={onlineStatus}
                     />
                 </div>
 
@@ -777,7 +863,10 @@ export default function ChatUI() {
                                             {activeUser.slice(0, 1).toUpperCase()}
                                         </div>
                                     )}
-                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-white"></div>
+                                    {/* Online status indicator for individual chats */}
+                                    {activeChatType === 'individual' && onlineStatus[activeUser]?.online && (
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                    )}
                                 </div>
                                 <div>
                                     <h2 className="font-semibold text-gray-800">
@@ -786,9 +875,18 @@ export default function ChatUI() {
                                             : activeUser
                                         }
                                     </h2>
-                                    <p className="text-xs text-gray-500">
-                                        {activeChatType === 'group' ? 'Group' : 'Online'}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        {activeChatType === 'individual' && onlineStatus[activeUser]?.online ? (
+                                            <>
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                <p className="text-xs text-green-600 font-medium">Online</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-xs text-gray-500">
+                                                {getActiveUserStatus()}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -800,7 +898,7 @@ export default function ChatUI() {
                         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex justify-center items-center text-gray-500">
-                                    💬
+                                    :speech_balloon:
                                 </div>
                                 <div>
                                     <h2 className="font-semibold text-gray-800">Chat App</h2>

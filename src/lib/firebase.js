@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { getDatabase, ref, set, get } from "@firebase/database";
+import { getDatabase, ref, set, get, serverTimestamp, onDisconnect } from "@firebase/database";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 
@@ -49,7 +49,7 @@ async function signup(email, password, username, profilePhoto = null) {
         // Check if username already exists
         const usernameRef = ref(db, `usernames/${username}`);
         const usernameSnapshot = await get(usernameRef);
-        
+
         if (usernameSnapshot.exists()) {
             return { success: false, message: 'username-already-exists' };
         }
@@ -95,7 +95,8 @@ async function signup(email, password, username, profilePhoto = null) {
             username: username,
             profilePhoto: profilePhotoUrl,
             createdAt: new Date().toISOString(),
-            lastSeen: new Date().toISOString()
+            lastSeen: serverTimestamp(),
+            online: true
         });
 
         return { success: true, user: user };
@@ -112,12 +113,12 @@ async function signup(email, password, username, profilePhoto = null) {
 async function login(email, password) {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        
-        // Update last seen timestamp
+
+        // Update last seen timestamp and set online status
         const user = userCredential.user;
         const username = user.displayName || user.email.split("@")[0];
-        
-        // Try to update last seen, but don't fail if it doesn't work
+
+        // Try to update last seen and online status, but don't fail if it doesn't work
         try {
             const userRef = ref(db, `users/${username}`);
             await set(userRef, {
@@ -125,12 +126,13 @@ async function login(email, password) {
                 email: user.email,
                 username: username,
                 profilePhoto: user.photoURL,
-                lastSeen: new Date().toISOString()
+                lastSeen: serverTimestamp(),
+                online: true
             }, { merge: true });
         } catch (dbError) {
-            console.error('Error updating last seen:', dbError);
+            console.error('Error updating user status:', dbError);
         }
-        
+
         return { success: true, user: user };
     } catch (error) {
         return { success: false, message: error.code };
@@ -152,5 +154,7 @@ export {
     app,
     signup,
     login,
-    logout
+    logout,
+    serverTimestamp,
+    onDisconnect
 }
