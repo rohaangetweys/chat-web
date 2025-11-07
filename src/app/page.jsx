@@ -7,7 +7,7 @@ import { auth, db, logout } from "@/lib/firebase";
 import { Toaster, toast } from "react-hot-toast";
 import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
 import Sidebar from "@/components/sidebar/Sidebar";
-import ChatArea from "@/components/ChatArea";
+import ChatArea from "@/components/chatArea/ChatArea";
 import MediaModal from "@/components/MediaModal";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import FileTypeModal from "@/components/FileTypeModal";
