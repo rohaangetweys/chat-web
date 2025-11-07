@@ -6,7 +6,7 @@ import { ref, onValue, push, set, onDisconnect, serverTimestamp } from "firebase
 import { auth, db, logout } from "@/lib/firebase";
 import { Toaster, toast } from "react-hot-toast";
 import { FaPhone, FaVideo, FaEllipsisV, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/sidebar/Sidebar";
 import ChatArea from "@/components/ChatArea";
 import MediaModal from "@/components/MediaModal";
 import VoiceRecorder from "@/components/VoiceRecorder";
