@@ -4,8 +4,28 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import EmptyChat from './EmptyChat';
 import { getProfilePhoto } from './utils';
+import { FaArrowLeft, FaPhone, FaEllipsisV } from 'react-icons/fa';
+import { HiOutlineUserGroup } from 'react-icons/hi2';
+import Image from 'next/image';
 
-export default function ChatArea({ activeUser, chat = [], username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick, onSendMessage, userProfiles }) {
+export default function ChatArea({ 
+    activeUser, 
+    chat = [], 
+    username, 
+    uploading, 
+    fileInputRef, 
+    onOpenMedia, 
+    activeChatType, 
+    onShowVoiceRecorder, 
+    onPaperClipClick, 
+    onSendMessage, 
+    userProfiles,
+    onlineStatus,
+    groups,
+    isMobileView,
+    onBackToSidebar,
+    onStartVoiceCall
+}) {
     const [message, setMessage] = useState('');
     const messagesEndRef = useRef(null);
 
@@ -33,21 +53,171 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
         if (e.key === 'Enter') sendMessage(e);
     };
 
+    // Function to format last seen time
+    const formatLastSeen = (lastSeen) => {
+        if (!lastSeen) return 'Unknown';
+        
+        const lastSeenDate = new Date(lastSeen);
+        const now = new Date();
+        const diffInMs = now - lastSeenDate;
+        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+        if (diffInMinutes < 1) {
+            return 'Just now';
+        } else if (diffInMinutes < 60) {
+            return `Last active ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+        } else if (diffInHours < 24) {
+            return `Last active ${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+        } else if (diffInDays < 7) {
+            return `Last active ${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+        } else {
+            return `Last active on ${lastSeenDate.toLocaleDateString()}`;
+        }
+    };
+
+    // Function to get status display for active user
+    const getActiveUserStatus = () => {
+        if (activeChatType === 'group') {
+            const group = groups?.find(g => g.id === activeUser);
+            const memberCount = group?.members?.length || 0;
+            return `${memberCount} members`;
+        }
+
+        if (!activeUser || !onlineStatus?.[activeUser]) {
+            return 'Unknown';
+        }
+
+        const userStatus = onlineStatus[activeUser];
+        if (userStatus.online) {
+            return 'Online';
+        } else if (userStatus.lastSeen) {
+            return formatLastSeen(userStatus.lastSeen);
+        } else {
+            return 'Offline';
+        }
+    };
+
+    const getProfilePhotoUrl = (username) => {
+        return getProfilePhoto(username, userProfiles);
+    };
+
     return (
         <>
+            {/* Chat Header */}
+            {activeUser ? (
+                <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        {isMobileView && (
+                            <button
+                                onClick={onBackToSidebar}
+                                className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                            >
+                                <FaArrowLeft size={18} />
+                            </button>
+                        )}
+                        <div className="relative">
+                            {activeChatType === 'group' ? (
+                                <div className="w-10 h-10 rounded-full bg-indigo-500 flex justify-center items-center text-white">
+                                    <HiOutlineUserGroup size={22} />
+                                </div>
+                            ) : getProfilePhotoUrl(activeUser) ? (
+                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#00a884]">
+                                    <Image
+                                        src={getProfilePhotoUrl(activeUser)}
+                                        alt={activeUser}
+                                        width={40}
+                                        height={40}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold">
+                                    {activeUser.slice(0, 1).toUpperCase()}
+                                </div>
+                            )}
+                            {/* Online status indicator for individual chats */}
+                            {activeChatType === 'individual' && onlineStatus?.[activeUser]?.online && (
+                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            )}
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-gray-800">
+                                {activeChatType === 'group' ?
+                                    groups?.find(g => g.id === activeUser)?.name || activeUser.split('_')[0]
+                                    : activeUser
+                                }
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                {activeChatType === 'individual' && onlineStatus?.[activeUser]?.online ? (
+                                    <>
+                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <p className="text-xs text-green-600 font-medium">Online</p>
+                                    </>
+                                ) : (
+                                    <p className="text-xs text-gray-500">
+                                        {getActiveUserStatus()}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-gray-600">
+                        {activeChatType === 'individual' && (
+                            <button
+                                onClick={onStartVoiceCall}
+                                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                                title="Voice Call"
+                            >
+                                <FaPhone size={16} />
+                            </button>
+                        )}
+                        <FaEllipsisV className="cursor-pointer hover:text-gray-800 transition-colors" size={16} />
+                    </div>
+                </div>
+            ) : (
+                <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex justify-center items-center text-gray-500">
+                            💬
+                        </div>
+                        <div>
+                            <h2 className="font-semibold text-gray-800">Chat App</h2>
+                            <p className="text-xs text-gray-500">Select a contact to start chatting</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Messages Area */}
             <div className="flex-1 p-4 overflow-y-auto bg-gray-100 relative">
                 <div className="flex flex-col space-y-2 mx-auto">
                     {!activeUser ? (
                         <EmptyChat />
                     ) : chat.length > 0 ? (
-                        <MessageList chat={chat} username={username} getProfilePhoto={(u) => getProfilePhoto(u, userProfiles)} onOpenMedia={onOpenMedia} activeChatType={activeChatType} />
+                        <MessageList 
+                            chat={chat} 
+                            username={username} 
+                            getProfilePhoto={getProfilePhotoUrl} 
+                            onOpenMedia={onOpenMedia} 
+                            activeChatType={activeChatType} 
+                        />
                     ) : (
                         <div className="text-center mt-20">
                             <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
                                 <span className="text-2xl text-gray-400">👋</span>
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-700 mb-2">{activeChatType === 'group' ? 'Group created!' : 'Say hello!'}</h3>
-                            <p className="text-gray-500">{activeChatType === 'group' ? 'Send the first message in this group' : 'Send your first message to start the conversation'}</p>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
+                            </h3>
+                            <p className="text-gray-500">
+                                {activeChatType === 'group'
+                                    ? 'Send the first message in this group'
+                                    : 'Send your first message to start the conversation'
+                                }
+                            </p>
                         </div>
                     )}
                     <div ref={messagesEndRef} />

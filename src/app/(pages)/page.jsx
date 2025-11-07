@@ -8,8 +8,10 @@ import useAuth from '@/components/chatPage/hooks/useAuth';
 import useProfiles from '@/components/chatPage/hooks/useProfiles';
 import useGroups from '@/components/chatPage/hooks/useGroups';
 import useChatHandlers from '@/components/chatPage/hooks/useChatHandlers';
+import { useRouter } from 'next/navigation';
 
 export default function ChatPage() {
+    const router = useRouter()
     const { user, authChecking, handleLogout } = useAuth();
     const { users, userProfiles, onlineStatus, username, setUsername } = useProfiles(user);
     const { groups } = useGroups(username);
@@ -42,8 +44,24 @@ export default function ChatPage() {
         setActiveUserHandler,
     } = useChatHandlers({ username, users, groups });
 
+    const handleBackToSidebar = () => {
+        setShowSidebar(true);
+        setActiveUser("");
+    };
+
+    const startVoiceCall = () => {
+        if (!activeUser || activeChatType === 'group') {
+            toast.error('Voice calls are only available for individual chats');
+            return;
+        }
+        console.log('Starting voice call with:', activeUser);
+    };
+
     if (authChecking) return <div className="h-full w-full flex items-center justify-center bg-gray-50"><div className="text-center"><div className="w-16 h-16 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-gray-600">Checking authentication...</p></div></div>;
-    if (!user) return null;
+    if (!user) {
+        router.push('/login');
+        return null
+    };
 
     return (
         <div className="flex flex-col h-full w-full px-20 py-10 border bg-gray-300 text-gray-800 overflow-hidden justify-center items-center">
@@ -57,8 +75,24 @@ export default function ChatPage() {
                 </div>
 
                 <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col bg-gray-50`}>
-                    <ChatArea fileInputRef={fileInputRef} activeUser={activeUser} chat={chat} uploading={uploading} username={username} onOpenMedia={openMediaModal} activeChatType={activeChatType} onShowVoiceRecorder={() => setShowVoiceRecorder(true)} onPaperClipClick={handlePaperClipClick} onSendMessage={sendMessage} userProfiles={userProfiles} />
-
+                    <ChatArea
+                        fileInputRef={fileInputRef}
+                        activeUser={activeUser}
+                        chat={chat}
+                        uploading={uploading}
+                        username={username}
+                        onOpenMedia={openMediaModal}
+                        activeChatType={activeChatType}
+                        onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
+                        onPaperClipClick={handlePaperClipClick}
+                        onSendMessage={sendMessage}
+                        userProfiles={userProfiles}
+                        onlineStatus={onlineStatus}
+                        groups={groups}
+                        isMobileView={isMobileView}
+                        onBackToSidebar={handleBackToSidebar}
+                        onStartVoiceCall={startVoiceCall}
+                    />
                     <ModalsManager modalContent={modalContent} modalType={modalType} showFileTypeModal={showFileTypeModal} setShowFileTypeModal={setShowFileTypeModal} showVoiceRecorder={showVoiceRecorder} setShowVoiceRecorder={setShowVoiceRecorder} onFileTypeSelect={handleFileTypeSelect} onVoiceComplete={handleVoiceRecordComplete} closeMediaModal={closeMediaModal} />
                 </div>
             </div>

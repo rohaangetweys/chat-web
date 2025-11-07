@@ -17,7 +17,7 @@ export default function SidebarHeader({ username, getProfilePhoto }) {
             <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-gray-800 truncate">{username}</h2>
                 <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                     Online
                 </p>
             </div>
