@@ -1,6 +1,4 @@
 'use client';
-
-// File: app/chat/page.jsx
 import React from 'react';
 import Sidebar from '@/components/sidebar/Sidebar';
 import ChatArea from '@/components/chatArea/ChatArea';
