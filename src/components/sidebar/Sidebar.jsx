@@ -86,19 +86,29 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            setLastMessages(prev => ({ ...prev, [user]: { ...lastMessage, timestamp: lastMessage.timestamp || lastMessage.id || Date.now() } }));
+            setLastMessages(prev => ({ 
+              ...prev, 
+              [user]: { 
+                ...lastMessage, 
+                timestamp: lastMessage.timestamp || Date.now() 
+              } 
+            }));
           } else {
             setLastMessages(prev => ({ ...prev, [user]: null }));
           }
         } else {
           setLastMessages(prev => ({ ...prev, [user]: null }));
         }
+      }, (error) => {
+        console.error(`Error getting last message for ${user}:`, error);
       });
 
       unsubscribeFunctions.push(unsubscribe);
     });
 
-    return () => { unsubscribeFunctions.forEach(unsubscribe => unsubscribe()); };
+    return () => { 
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe()); 
+    };
   }, [availableUsers, username]);
 
   useEffect(() => {
@@ -110,27 +120,47 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       const lastMessageQuery = query(messagesRef, orderByKey(), limitToLast(1));
 
       const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
+        console.log(`Group ${group.id} last message snapshot:`, snapshot.exists());
+        
         if (snapshot.exists()) {
           const messages = [];
           snapshot.forEach((child) => {
-            messages.push({ id: child.key, ...child.val() });
+            const messageData = child.val();
+            messages.push({ 
+              id: child.key, 
+              ...messageData,
+              timestamp: messageData.timestamp || Date.now()
+            });
           });
 
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            setLastMessages(prev => ({ ...prev, [group.id]: { ...lastMessage, timestamp: lastMessage.timestamp || lastMessage.id || Date.now() } }));
+            console.log(`Group ${group.id} last message:`, lastMessage);
+            setLastMessages(prev => ({ 
+              ...prev, 
+              [group.id]: { 
+                ...lastMessage, 
+                timestamp: lastMessage.timestamp || Date.now() 
+              } 
+            }));
           } else {
+            console.log(`Group ${group.id}: No messages found`);
             setLastMessages(prev => ({ ...prev, [group.id]: null }));
           }
         } else {
+          console.log(`Group ${group.id}: Snapshot doesn't exist`);
           setLastMessages(prev => ({ ...prev, [group.id]: null }));
         }
+      }, (error) => {
+        console.error(`Error getting last message for group ${group.id}:`, error);
       });
 
       unsubscribeFunctions.push(unsubscribe);
     });
 
-    return () => { unsubscribeFunctions.forEach(unsubscribe => unsubscribe()); };
+    return () => { 
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe()); 
+    };
   }, [groups, username]);
 
   useEffect(() => {
@@ -138,19 +168,51 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
     availableUsers.forEach(user => {
       const lastMessage = lastMessages[user];
-      allContacts.push({ type: 'user', id: user, name: getDisplayName(user), username: user, lastMessage: lastMessage, timestamp: lastMessage?.timestamp || 0, unreadCount: unreadCounts[user] || 0, online: onlineStatus[user]?.online || false });
+      const timestamp = lastMessage?.timestamp || 0;
+      const unreadCount = unreadCounts[user] || 0;
+      
+      console.log(`User ${user}: unreadCount = ${unreadCount}`);
+      
+      allContacts.push({ 
+        type: 'user', 
+        id: user, 
+        name: getDisplayName(user), 
+        username: user, 
+        lastMessage: lastMessage, 
+        timestamp: timestamp,
+        unreadCount: unreadCount, 
+        online: onlineStatus[user]?.online || false 
+      });
     });
 
     groups.forEach(group => {
       const lastMessage = lastMessages[group.id];
-      allContacts.push({ type: 'group', id: group.id, name: group.name, lastMessage: lastMessage, timestamp: lastMessage?.timestamp || 0, unreadCount: unreadCounts[group.id] || 0 });
+      const timestamp = lastMessage?.timestamp || 0;
+      const unreadCount = unreadCounts[group.id] || 0;
+      
+      console.log(`Group ${group.id}: unreadCount = ${unreadCount}`);
+      
+      allContacts.push({ 
+        type: 'group', 
+        id: group.id, 
+        name: group.name, 
+        lastMessage: lastMessage, 
+        timestamp: timestamp,
+        unreadCount: unreadCount 
+      });
     });
 
     const sorted = allContacts.sort((a, b) => {
-      if (a.timestamp && b.timestamp) return b.timestamp - a.timestamp;
+      if (a.timestamp && b.timestamp) {
+        return b.timestamp - a.timestamp;
+      }
       if (a.timestamp && !b.timestamp) return -1;
       if (!a.timestamp && b.timestamp) return 1;
-      return 0;
+      
+      if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
+      if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
+      
+      return a.name.localeCompare(b.name);
     });
 
     setSortedContacts(sorted);
@@ -184,25 +246,45 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       const searchResults = [];
 
       filteredGroups.forEach((group) => {
-        searchResults.push({ type: 'group', id: group.id, name: group.name, lastMessage: lastMessages[group.id], unreadCount: unreadCounts[group.id] || 0 });
+        searchResults.push({ 
+          type: 'group', 
+          id: group.id, 
+          name: group.name, 
+          lastMessage: lastMessages[group.id], 
+          unreadCount: unreadCounts[group.id] || 0 
+        });
       });
 
       filteredUsers.forEach((user) => {
-        searchResults.push({ type: 'user', id: user, name: getDisplayName(user), username: user, lastMessage: lastMessages[user], unreadCount: unreadCounts[user] || 0, online: onlineStatus[user]?.online || false });
+        searchResults.push({ 
+          type: 'user', 
+          id: user, 
+          name: getDisplayName(user), 
+          username: user, 
+          lastMessage: lastMessages[user], 
+          unreadCount: unreadCounts[user] || 0, 
+          online: onlineStatus[user]?.online || false 
+        });
       });
 
       return searchResults;
     }
 
+    let filtered = sortedContacts;
+    
     switch (activeFilter) {
       case 'unread':
-        return sortedContacts.filter(contact => contact.unreadCount > 0);
+        filtered = sortedContacts.filter(contact => contact.unreadCount > 0);
+        break;
       case 'groups':
-        return sortedContacts.filter(contact => contact.type === 'group');
+        filtered = sortedContacts.filter(contact => contact.type === 'group');
+        break;
       case 'all':
       default:
-        return sortedContacts;
+        filtered = sortedContacts;
     }
+
+    return filtered;
   }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus]);
 
   return (
@@ -212,12 +294,30 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
         <SidebarSearch searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} />
         <SidebarFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
         <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-          <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={getProfilePhoto} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} />
+          <ContactList 
+            contacts={filteredContacts} 
+            activeUser={activeUser} 
+            activeChatType={activeChatType} 
+            handleUserClick={handleUserClick} 
+            handleGroupClick={handleGroupClick} 
+            getProfilePhoto={getProfilePhoto} 
+            getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} 
+            formatLastMessageTime={(ts) => formatLastMessageTime(ts)} 
+          />
         </div>
       </div>
 
       {showGroupModal && (
-        <GroupModal availableUsers={availableUsers} onlineStatus={onlineStatus} groupName={groupName} setGroupName={setGroupName} selectedUsers={selectedUsers} toggleUserSelection={toggleUserSelection} closeGroupModal={closeGroupModal} handleCreateGroup={handleCreateGroup} />
+        <GroupModal 
+          availableUsers={availableUsers} 
+          onlineStatus={onlineStatus} 
+          groupName={groupName} 
+          setGroupName={setGroupName} 
+          selectedUsers={selectedUsers} 
+          toggleUserSelection={toggleUserSelection} 
+          closeGroupModal={closeGroupModal} 
+          handleCreateGroup={handleCreateGroup} 
+        />
       )}
     </>
   );
