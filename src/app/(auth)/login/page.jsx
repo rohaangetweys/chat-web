@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Toaster, toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { FaEnvelope, FaLock, FaArrowRight, FaComments, FaShieldAlt } from 'react-icons/fa';
-import { login } from '@/lib/firebaseServices';
+import { login } from '@/lib/firebase/firebaseServices';
 
 export default function Login() {
     const router = useRouter();

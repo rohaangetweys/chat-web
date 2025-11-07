@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ref, onValue, push, set, serverTimestamp } from 'firebase/database';
-import { db } from '@/lib/firebaseConfig';
+import { db } from '@/lib/firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 
 export default function useChatHandlers({ username, users, groups, setShowSidebar }) {

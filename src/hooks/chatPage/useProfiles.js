@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ref, onValue, set, onDisconnect, serverTimestamp } from 'firebase/database';
-import { db } from '@/lib/firebaseConfig';
+import { db } from '@/lib/firebase/firebaseConfig';
 
 export default function useProfiles(user) {
     const [users, setUsers] = useState([]);
