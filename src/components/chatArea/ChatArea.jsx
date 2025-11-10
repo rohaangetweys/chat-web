@@ -14,7 +14,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
     const [recordingComplete, setRecordingComplete] = useState(false);
     const [duration, setDuration] = useState(0);
     const [audioBlob, setAudioBlob] = useState(null);
-    
+
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const durationIntervalRef = useRef(null);
@@ -38,7 +38,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
 
     const startRecording = async () => {
         if (!activeUser) return;
-        
+
         setIsRecording(true);
         setRecordingComplete(false);
         setDuration(0);
@@ -227,11 +227,10 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
             </div>
 
             {activeUser && (
-                <ChatInput 
-                    activeUser={activeUser} 
-                    uploading={uploading} 
-                    fileInputRef={fileInputRef} 
-                    onPaperClipClick={onPaperClipClick} 
+                <ChatInput
+                    activeUser={activeUser}
+                    uploading={uploading}
+                    fileInputRef={fileInputRef} // Make sure this is passed
                     onStartRecording={startRecording}
                     onStopRecording={stopRecording}
                     onCancelRecording={cancelRecording}
@@ -240,11 +239,12 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                     recordingComplete={recordingComplete}
                     duration={duration}
                     audioBlob={audioBlob}
-                    onSendMessage={sendMessage} 
-                    message={message} 
-                    setMessage={setMessage} 
-                    onKeyDown={handleKeyDown} 
-                    activeChatType={activeChatType} 
+                    onSendMessage={sendMessage}
+                    message={message}
+                    setMessage={setMessage}
+                    onKeyDown={handleKeyDown}
+                    activeChatType={activeChatType}
+                    onFileTypeSelect={onPaperClipClick} // This can be kept for any additional logic
                 />
             )}
         </>

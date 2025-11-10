@@ -79,7 +79,7 @@ export default function ChatPage() {
                         onOpenMedia={openMediaModal}
                         activeChatType={activeChatType}
                         onPaperClipClick={handlePaperClipClick}
-                        onSendMessage={sendMessage}  // Make sure this function can handle audio files
+                        onSendMessage={sendMessage}
                         userProfiles={userProfiles}
                         onlineStatus={onlineStatus}
                         groups={groups}
@@ -87,7 +87,11 @@ export default function ChatPage() {
                         onBackToSidebar={handleBackToSidebar}
                         onStartVoiceCall={startVoiceCall}
                     />
-                    <ModalsManager modalContent={modalContent} modalType={modalType} showFileTypeModal={showFileTypeModal} setShowFileTypeModal={setShowFileTypeModal} showVoiceRecorder={showVoiceRecorder} setShowVoiceRecorder={setShowVoiceRecorder} onFileTypeSelect={handleFileTypeSelect} onVoiceComplete={handleVoiceRecordComplete} closeMediaModal={closeMediaModal} />
+                    <ModalsManager
+                        modalContent={modalContent}
+                        modalType={modalType}
+                        closeMediaModal={closeMediaModal}
+                    />
                 </div>
             </div>
         </div>
