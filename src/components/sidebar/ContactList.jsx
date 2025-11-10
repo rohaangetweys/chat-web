@@ -3,7 +3,7 @@ import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import Image from 'next/image';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
-import { getRandomColor } from './utils';
+import { getRandomColor } from '../../utils/sidebar';
 
 export default function ContactList({ contacts, activeUser, activeChatType, handleUserClick, handleGroupClick, getProfilePhoto, getLastMessagePreview, formatLastMessageTime }) {
     const { isDark } = useTheme();

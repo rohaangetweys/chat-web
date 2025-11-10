@@ -2,31 +2,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
-import EmptyChat from './EmptyChat';
-import { getProfilePhoto } from './utils';
+import { getProfilePhoto, getActiveUserStatus } from '../../utils/chatArea';
 import { FaArrowLeft, FaPhone, FaEllipsisV } from 'react-icons/fa';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function ChatArea({
-    activeUser,
-    chat = [],
-    username,
-    uploading,
-    fileInputRef,
-    onOpenMedia,
-    activeChatType,
-    onShowVoiceRecorder,
-    onPaperClipClick,
-    onSendMessage,
-    userProfiles,
-    onlineStatus,
-    groups,
-    isMobileView,
-    onBackToSidebar,
-    onStartVoiceCall
-}) {
+export default function ChatArea({ activeUser, chat = [], username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick, onSendMessage, userProfiles, onlineStatus, groups, isMobileView, onBackToSidebar, onStartVoiceCall }) {
     const [message, setMessage] = useState('');
     const messagesEndRef = useRef(null);
     const { isDark } = useTheme();
@@ -53,50 +35,6 @@ export default function ChatArea({
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') sendMessage(e);
-    };
-
-    const formatLastSeen = (lastSeen) => {
-        if (!lastSeen) return 'Unknown';
-
-        const lastSeenDate = new Date(lastSeen);
-        const now = new Date();
-        const diffInMs = now - lastSeenDate;
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-        if (diffInMinutes < 1) {
-            return 'Just now';
-        } else if (diffInMinutes < 60) {
-            return `Last active ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-        } else if (diffInHours < 24) {
-            return `Last active ${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-        } else if (diffInDays < 7) {
-            return `Last active ${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-        } else {
-            return `Last active on ${lastSeenDate.toLocaleDateString()}`;
-        }
-    };
-
-    const getActiveUserStatus = () => {
-        if (activeChatType === 'group') {
-            const group = groups?.find(g => g.id === activeUser);
-            const memberCount = group?.members?.length || 0;
-            return `${memberCount} members`;
-        }
-
-        if (!activeUser || !onlineStatus?.[activeUser]) {
-            return 'Unknown';
-        }
-
-        const userStatus = onlineStatus[activeUser];
-        if (userStatus.online) {
-            return 'Online';
-        } else if (userStatus.lastSeen) {
-            return formatLastSeen(userStatus.lastSeen);
-        } else {
-            return 'Offline';
-        }
     };
 
     const getProfilePhotoUrl = (username) => {
@@ -155,7 +93,7 @@ export default function ChatArea({
                                     </>
                                 ) : (
                                     <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        {getActiveUserStatus()}
+                                        {getActiveUserStatus(activeChatType, activeUser, onlineStatus, groups)}
                                     </p>
                                 )}
                             </div>
@@ -192,7 +130,13 @@ export default function ChatArea({
             <div className={`flex-1 p-4 overflow-y-auto ${isDark ? 'bg-gray-900' : 'bg-gray-100'} relative`}>
                 <div className="flex flex-col space-y-2 mx-auto">
                     {!activeUser ? (
-                        <EmptyChat />
+                        <div className="text-center mt-20">
+                            <div className={`w-24 h-24 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner`}>
+                                <span className="text-4xl text-gray-400">💬</span>
+                            </div>
+                            <h3 className={`text-xl font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Welcome to Chat</h3>
+                            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>Select a contact from the sidebar to start a conversation</p>
+                        </div>
                     ) : chat.length > 0 ? (
                         <MessageList
                             chat={chat}

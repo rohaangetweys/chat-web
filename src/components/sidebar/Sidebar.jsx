@@ -5,289 +5,190 @@ import { db } from '@/lib/firebaseConfig';
 import SidebarHeader from './SidebarHeader';
 import ContactList from './ContactList';
 import GroupModal from './GroupModal';
-import { formatLastMessageTime, getLastMessagePreview } from './utils';
+import { formatLastMessageTime, getLastMessagePreview, getAvailableUsers, getProfilePhoto, toggleUserSelection, filterUsersByQuery, filterGroupsByQuery, prepareContacts, filterContacts } from '../../utils/sidebar';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles, onlineStatus }) {
-  const [showGroupModal, setShowGroupModal] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [filteredGroups, setFilteredGroups] = useState([]);
-  const [lastMessages, setLastMessages] = useState({});
-  const [sortedContacts, setSortedContacts] = useState([]);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const { isDark } = useTheme();
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [groupName, setGroupName] = useState('');
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [filteredGroups, setFilteredGroups] = useState([]);
+    const [lastMessages, setLastMessages] = useState({});
+    const [sortedContacts, setSortedContacts] = useState([]);
+    const [activeFilter, setActiveFilter] = useState('all');
+    const { isDark } = useTheme();
 
-  const handleUserClick = (user) => {
-    setActiveUser(user, 'individual');
-  };
-
-  const handleGroupClick = (groupId) => {
-    setActiveUser(groupId, 'group');
-  };
-
-  const openGroupModal = () => {
-    setShowGroupModal(true);
-    setGroupName('');
-    setSelectedUsers([]);
-  };
-
-  const closeGroupModal = () => {
-    setShowGroupModal(false);
-    setGroupName('');
-    setSelectedUsers([]);
-  };
-
-  const toggleUserSelection = (user) => {
-    setSelectedUsers(prev =>
-      prev.includes(user) ? prev.filter(u => u !== user) : [...prev, user]
-    );
-  };
-
-  const handleCreateGroup = async () => {
-    const groupId = await onCreateGroup(groupName, selectedUsers);
-    if (groupId) {
-      handleGroupClick(groupId);
-      closeGroupModal();
-    }
-  };
-
-  const availableUsers = useMemo(() => {
-    return users.filter(u => u !== username);
-  }, [users, username]);
-
-  const getProfilePhoto = (username) => {
-    return userProfiles[username]?.profilePhoto || null;
-  };
-
-  const getDisplayName = (username) => {
-    return username;
-  };
-
-  useEffect(() => {
-    if (!username) return;
-    const unsubscribeFunctions = [];
-
-    availableUsers.forEach((user) => {
-      const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
-      const chatRef = ref(db, `chats/${chatId}`);
-      const lastMessageQuery = query(chatRef, orderByKey(), limitToLast(1));
-
-      const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
-        if (snapshot.exists()) {
-          const messages = [];
-          snapshot.forEach((child) => {
-            messages.push({ id: child.key, ...child.val() });
-          });
-
-          if (messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            setLastMessages(prev => ({
-              ...prev,
-              [user]: {
-                ...lastMessage,
-                timestamp: lastMessage.timestamp || Date.now()
-              }
-            }));
-          } else {
-            setLastMessages(prev => ({ ...prev, [user]: null }));
-          }
-        } else {
-          setLastMessages(prev => ({ ...prev, [user]: null }));
-        }
-      }, (error) => {
-        console.error(`Error getting last message for ${user}:`, error);
-      });
-
-      unsubscribeFunctions.push(unsubscribe);
-    });
-
-    return () => {
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    const handleUserClick = (user) => {
+        setActiveUser(user, 'individual');
     };
-  }, [availableUsers, username]);
 
-  useEffect(() => {
-    if (!username) return;
-    const unsubscribeFunctions = [];
+    const handleGroupClick = (groupId) => {
+        setActiveUser(groupId, 'group');
+    };
 
-    groups.forEach((group) => {
-      const messagesRef = ref(db, `groupChats/${group.id}/messages`);
-      const lastMessageQuery = query(messagesRef, orderByKey(), limitToLast(1));
+    const openGroupModal = () => {
+        setShowGroupModal(true);
+        setGroupName('');
+        setSelectedUsers([]);
+    };
 
-      const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
-        if (snapshot.exists()) {
-          const messages = [];
-          snapshot.forEach((child) => {
-            const messageData = child.val();
-            messages.push({
-              id: child.key,
-              ...messageData,
-              timestamp: messageData.timestamp || Date.now()
+    const closeGroupModal = () => {
+        setShowGroupModal(false);
+        setGroupName('');
+        setSelectedUsers([]);
+    };
+
+    const handleToggleUserSelection = (user) => {
+        setSelectedUsers(prev => toggleUserSelection(prev, user));
+    };
+
+    const handleCreateGroup = async () => {
+        const groupId = await onCreateGroup(groupName, selectedUsers);
+        if (groupId) {
+            handleGroupClick(groupId);
+            closeGroupModal();
+        }
+    };
+
+    const availableUsers = useMemo(() => {
+        return getAvailableUsers(users, username);
+    }, [users, username]);
+
+    const handleSearchChange = (value) => setSearchQuery(value);
+    const clearSearch = () => setSearchQuery('');
+
+    useEffect(() => {
+        if (!username) return;
+        const unsubscribeFunctions = [];
+
+        availableUsers.forEach((user) => {
+            const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
+            const chatRef = ref(db, `chats/${chatId}`);
+            const lastMessageQuery = query(chatRef, orderByKey(), limitToLast(1));
+
+            const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
+                if (snapshot.exists()) {
+                    const messages = [];
+                    snapshot.forEach((child) => {
+                        messages.push({ id: child.key, ...child.val() });
+                    });
+
+                    if (messages.length > 0) {
+                        const lastMessage = messages[messages.length - 1];
+                        setLastMessages(prev => ({
+                            ...prev,
+                            [user]: {
+                                ...lastMessage,
+                                timestamp: lastMessage.timestamp || Date.now()
+                            }
+                        }));
+                    } else {
+                        setLastMessages(prev => ({ ...prev, [user]: null }));
+                    }
+                } else {
+                    setLastMessages(prev => ({ ...prev, [user]: null }));
+                }
+            }, (error) => {
+                console.error(`Error getting last message for ${user}:`, error);
             });
-          });
 
-          if (messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            setLastMessages(prev => ({
-              ...prev,
-              [group.id]: {
-                ...lastMessage,
-                timestamp: lastMessage.timestamp || Date.now()
-              }
-            }));
-          } else {
-            setLastMessages(prev => ({ ...prev, [group.id]: null }));
-          }
-        } else {
-          setLastMessages(prev => ({ ...prev, [group.id]: null }));
-        }
-      }, (error) => {
-        console.error(`Error getting last message for group ${group.id}:`, error);
-      });
-
-      unsubscribeFunctions.push(unsubscribe);
-    });
-
-    return () => {
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
-    };
-  }, [groups, username]);
-
-  useEffect(() => {
-    const allContacts = [];
-
-    availableUsers.forEach(user => {
-      const lastMessage = lastMessages[user];
-      const timestamp = lastMessage?.timestamp || 0;
-      const unreadCount = unreadCounts[user] || 0;
-
-      allContacts.push({
-        type: 'user',
-        id: user,
-        name: getDisplayName(user),
-        username: user,
-        lastMessage: lastMessage,
-        timestamp: timestamp,
-        unreadCount: unreadCount,
-        online: onlineStatus[user]?.online || false
-      });
-    });
-
-    groups.forEach(group => {
-      const lastMessage = lastMessages[group.id];
-      const timestamp = lastMessage?.timestamp || 0;
-      const unreadCount = unreadCounts[group.id] || 0;
-
-      allContacts.push({
-        type: 'group',
-        id: group.id,
-        name: group.name,
-        lastMessage: lastMessage,
-        timestamp: timestamp,
-        unreadCount: unreadCount
-      });
-    });
-
-    const sorted = allContacts.sort((a, b) => {
-      if (a.timestamp && b.timestamp) {
-        return b.timestamp - a.timestamp;
-      }
-      if (a.timestamp && !b.timestamp) return -1;
-      if (!a.timestamp && b.timestamp) return 1;
-
-      if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-      if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
-
-      return a.name.localeCompare(b.name);
-    });
-
-    setSortedContacts(sorted);
-  }, [availableUsers, groups, lastMessages, unreadCounts, onlineStatus]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredUsers(availableUsers);
-    } else {
-      const q = searchQuery.toLowerCase();
-      const filtered = availableUsers.filter(user => user.toLowerCase().includes(q));
-      setFilteredUsers(filtered);
-    }
-  }, [searchQuery, availableUsers]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredGroups(groups);
-    } else {
-      const q = searchQuery.toLowerCase();
-      const filtered = groups.filter(group => group.name.toLowerCase().includes(q));
-      setFilteredGroups(filtered);
-    }
-  }, [searchQuery, groups]);
-
-  const handleSearchChange = (value) => setSearchQuery(value);
-  const clearSearch = () => setSearchQuery('');
-
-  const filteredContacts = useMemo(() => {
-    if (searchQuery.trim() !== '') {
-      const searchResults = [];
-
-      filteredGroups.forEach((group) => {
-        searchResults.push({
-          type: 'group',
-          id: group.id,
-          name: group.name,
-          lastMessage: lastMessages[group.id],
-          unreadCount: unreadCounts[group.id] || 0
+            unsubscribeFunctions.push(unsubscribe);
         });
-      });
 
-      filteredUsers.forEach((user) => {
-        searchResults.push({
-          type: 'user',
-          id: user,
-          name: getDisplayName(user),
-          username: user,
-          lastMessage: lastMessages[user],
-          unreadCount: unreadCounts[user] || 0,
-          online: onlineStatus[user]?.online || false
+        return () => {
+            unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+        };
+    }, [availableUsers, username]);
+
+    useEffect(() => {
+        if (!username) return;
+        const unsubscribeFunctions = [];
+
+        groups.forEach((group) => {
+            const messagesRef = ref(db, `groupChats/${group.id}/messages`);
+            const lastMessageQuery = query(messagesRef, orderByKey(), limitToLast(1));
+
+            const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
+                if (snapshot.exists()) {
+                    const messages = [];
+                    snapshot.forEach((child) => {
+                        const messageData = child.val();
+                        messages.push({
+                            id: child.key,
+                            ...messageData,
+                            timestamp: messageData.timestamp || Date.now()
+                        });
+                    });
+
+                    if (messages.length > 0) {
+                        const lastMessage = messages[messages.length - 1];
+                        setLastMessages(prev => ({
+                            ...prev,
+                            [group.id]: {
+                                ...lastMessage,
+                                timestamp: lastMessage.timestamp || Date.now()
+                            }
+                        }));
+                    } else {
+                        setLastMessages(prev => ({ ...prev, [group.id]: null }));
+                    }
+                } else {
+                    setLastMessages(prev => ({ ...prev, [group.id]: null }));
+                }
+            }, (error) => {
+                console.error(`Error getting last message for group ${group.id}:`, error);
+            });
+
+            unsubscribeFunctions.push(unsubscribe);
         });
-      });
 
-      return searchResults;
-    }
+        return () => {
+            unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+        };
+    }, [groups, username]);
 
-    let filtered = sortedContacts;
+    useEffect(() => {
+        const allContacts = prepareContacts(availableUsers, groups, lastMessages, unreadCounts, onlineStatus);
+        setSortedContacts(allContacts);
+    }, [availableUsers, groups, lastMessages, unreadCounts, onlineStatus]);
 
-    switch (activeFilter) {
-      case 'unread':
-        filtered = sortedContacts.filter(contact => contact.unreadCount > 0);
-        break;
-      case 'groups':
-        filtered = sortedContacts.filter(contact => contact.type === 'group');
-        break;
-      case 'all':
-      default:
-        filtered = sortedContacts;
-    }
+    useEffect(() => {
+        const filtered = filterUsersByQuery(availableUsers, searchQuery);
+        setFilteredUsers(filtered);
+    }, [searchQuery, availableUsers]);
 
-    return filtered;
-  }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus]);
+    useEffect(() => {
+        const filtered = filterGroupsByQuery(groups, searchQuery);
+        setFilteredGroups(filtered);
+    }, [searchQuery, groups]);
 
-  return (
-    <>
-      <div className={`w-full h-full ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-r flex flex-col shadow-lg`}>
-        <SidebarHeader username={username} getProfilePhoto={getProfilePhoto} searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
-        <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-          <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={getProfilePhoto} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} />
-        </div>
-      </div>
+    const filteredContacts = useMemo(() => {
+        return filterContacts(
+            sortedContacts, 
+            activeFilter, 
+            searchQuery, 
+            filteredUsers, 
+            filteredGroups, 
+            lastMessages, 
+            unreadCounts, 
+            onlineStatus
+        );
+    }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus]);
 
-      {showGroupModal && (
-        <GroupModal availableUsers={availableUsers} onlineStatus={onlineStatus} groupName={groupName} setGroupName={setGroupName} selectedUsers={selectedUsers} toggleUserSelection={toggleUserSelection} closeGroupModal={closeGroupModal} handleCreateGroup={handleCreateGroup} />
-      )}
-    </>
-  );
+    return (
+        <>
+            <div className={`w-full h-full ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-r flex flex-col shadow-lg`}>
+                <SidebarHeader username={username} getProfilePhoto={(username) => getProfilePhoto(username, userProfiles)} searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
+                <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                    <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={(username) => getProfilePhoto(username, userProfiles)} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} />
+                </div>
+            </div>
+
+            {showGroupModal && (
+                <GroupModal availableUsers={availableUsers} onlineStatus={onlineStatus} groupName={groupName} setGroupName={setGroupName} selectedUsers={selectedUsers} toggleUserSelection={handleToggleUserSelection} closeGroupModal={closeGroupModal} handleCreateGroup={handleCreateGroup} />
+            )}
+        </>
+    );
 }

@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/sidebar/Sidebar';
 import ChatArea from '@/components/chatArea/ChatArea';
-import AppHeader from '@/components/chatArea/AppHeader';
+import AppHeader from '@/components/AppHeader';
 import ModalsManager from '@/components/chatArea/ModalsManager';
-import useAuth from '@/hooks/chatPage/useAuth';
-import useProfiles from '@/hooks/chatPage/useProfiles';
-import useGroups from '@/hooks/chatPage/useGroups';
-import useChatHandlers from '@/hooks/chatPage/useChatHandlers';
+import useAuth from '@/hooks/useAuth';
+import useProfiles from '@/hooks/useProfiles';
+import useGroups from '@/hooks/useGroups';
+import useChatHandlers from '@/hooks/useChatHandlers';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -21,32 +21,7 @@ export default function ChatPage() {
 
     const [showSidebar, setShowSidebar] = useState(true);
 
-    const {
-        activeUser, 
-        setActiveUser, 
-        activeChatType, 
-        setActiveChatType, 
-        chat, 
-        uploading, 
-        fileInputRef, 
-        isMobileView, 
-        showVoiceRecorder, 
-        setShowVoiceRecorder, 
-        showFileTypeModal, 
-        setShowFileTypeModal, 
-        modalContent, 
-        modalType, 
-        openMediaModal, 
-        closeMediaModal, 
-        handleFileInputChange, 
-        handleVoiceRecordComplete, 
-        createGroupChat, 
-        sendMessage, 
-        handlePaperClipClick, 
-        handleFileTypeSelect, 
-        unreadCounts, 
-        setActiveUserHandler, 
-    } = useChatHandlers({ username, users, groups, setShowSidebar });
+    const { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, handlePaperClipClick, handleFileTypeSelect, unreadCounts, setActiveUserHandler } = useChatHandlers({ username, users, groups, setShowSidebar });
 
     const handleBackToSidebar = () => {
         setShowSidebar(true);
@@ -76,7 +51,7 @@ export default function ChatPage() {
     }
 
     return (
-        <div className={`flex flex-col h-full w-full 2xl:px-20 2xl:py-10 sm:px-10 sm:py-5 ${isDark ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'} overflow-hidden justify-center items-center`}>
+        <div className={`flex flex-col h-full w-full ${isDark ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'} overflow-hidden justify-center items-center`}>
 
             <input
                 type="file"
