@@ -1,6 +1,5 @@
 'use client';
 import React, { useRef, useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
 import { FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { MdDarkMode, MdLightMode } from 'react-icons/md';
 import Image from 'next/image';
@@ -23,7 +22,6 @@ export default function AppHeader({ user, username, handleLogout }) {
 
     return (
         <header className={`px-6 border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} w-full h-20 rounded-3xl flex items-center justify-between mb-3`}>
-            <Toaster position="top-center" reverseOrder={false} toastOptions={{ style: { background: '#00a884', color: 'white', border: '1px solid #00a884' } }} />
 
             <div className="flex items-center gap-3">
                 <div className="bg-[#00a884] text-white px-6 h-10 rounded-xl flex items-center justify-center opacity-50 text-xl font-semibold">

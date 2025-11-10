@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { FaUser, FaEnvelope, FaLock, FaArrowRight, FaComments, FaCamera, FaTimes } from 'react-icons/fa';
 import Image from 'next/image';
@@ -124,61 +124,33 @@ export default function Signup() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">
-            {/* Animated Background Elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#00a884] rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#00a884] rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-pulse delay-1000"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gray-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-500"></div>
-            </div>
-
-            {/* Floating Icons */}
-            <div className="absolute top-20 left-20 text-[#00a884] opacity-10 animate-bounce">
-                <FaComments size={40} />
-            </div>
-            <div className="absolute bottom-20 right-20 text-[#00a884] opacity-10 animate-bounce delay-1000">
-                <FaComments size={30} />
-            </div>
-
-            <Toaster 
-                position="top-center" 
-                reverseOrder={false}
-                toastOptions={{
-                    style: {
-                        background: '#00a884',
-                        color: 'white',
-                        border: '1px solid #00a884',
-                    },
-                }}
-            />
-            
-            <div className="relative z-10 w-full max-w-md">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">            
+            <div className="relative z-10 w-full max-w-md max-sm:max-w-2xl max-sm:scale-95">
                 {/* Header Section */}
-                <div className="text-center mb-8">
-                    <div className="flex justify-center mb-4">
+                <div className="text-center mb-8 max-sm:mb-3">
+                    <div className="flex justify-center mb-4 max-sm:hidden">
                         <div className="relative">
                             <div className="w-16 h-16 bg-gradient-to-br from-[#00a884] to-[#00b884] rounded-2xl flex items-center justify-center shadow-lg">
                                 <FaComments className="text-white text-2xl" />
                             </div>
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#00a884] rounded-full border-4 border-white animate-ping opacity-75"></div>
                         </div>
                     </div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-[#00a884] to-[#00b884] bg-clip-text text-transparent mb-2">
+                    <h1 className="text-4xl max-sm:text-3xl font-bold bg-gradient-to-r from-[#00a884] to-[#00b884] bg-clip-text text-transparent mb-2 max-sm:mb-0">
                         Welcome
                     </h1>
-                    <p className="text-gray-600 text-lg">Create your account to get started</p>
+                    <p className="text-gray-600 text-lg max-sm:text-xs">Create your account to get started</p>
                 </div>
 
                 {/* Card */}
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 p-8 transform hover:scale-[1.02] transition-all duration-300">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6 max-sm:space-y-3">
                         {/* Profile Photo Upload */}
                         <div className="flex flex-col items-center mb-6">
                             <div 
                                 className="relative group cursor-pointer"
                                 onClick={handleProfilePhotoClick}
                             >
-                                <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-[#00a884] group-hover:shadow-xl">
+                                <div className="w-24 h-24 max-sm:w-18 max-sm:h-18 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-[#00a884] group-hover:shadow-xl">
                                     {profilePhotoUrl ? (
                                         <Image
                                             src={profilePhotoUrl}
@@ -194,14 +166,10 @@ export default function Signup() {
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#00a884] transition-colors">
                                             <FaCamera size={24} />
-                                            <span className="text-xs mt-1">Add Photo</span>
+                                            <span className="text-xs mt-1 max-sm:text-[10px]">Add Photo</span>
                                         </div>
                                     )}
                                     
-                                    {/* Hover overlay */}
-                                    <div className="absolute inset-0 rounded-full bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                                        <FaCamera className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={20} />
-                                    </div>
                                 </div>
                                 
                                 {/* Remove button - only show when there's a photo */}
@@ -244,18 +212,18 @@ export default function Signup() {
                             <label className="text-sm font-medium text-gray-700 mb-2 block">Username</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaUser className="text-[#00a884] group-focus-within:text-[#00b884] transition-colors" />
+                                    <FaUser className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
                                 </div>
                                 <input
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value.toLowerCase())}
                                     placeholder="Choose a username"
-                                    className="w-full pl-10 pr-4 py-4 rounded-2xl bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                                    className="w-full pl-10 pr-4 py-4 rounded-2xl max-sm:py-2 max-sm:rounded-xl max-sm:text-sm bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                                     required
                                 />
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">3-20 characters, letters, numbers, and underscores only</p>
+                            <p className="text-xs text-gray-500 mt-1 max-sm:text-[10px]">3-20 characters, letters, numbers, and underscores only</p>
                         </div>
 
                         {/* Email Field */}
@@ -263,14 +231,14 @@ export default function Signup() {
                             <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaEnvelope className="text-[#00a884] group-focus-within:text-[#00b884] transition-colors" />
+                                    <FaEnvelope className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
                                 </div>
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter your email"
-                                    className="w-full pl-10 pr-4 py-4 rounded-2xl bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                                    className="w-full pl-10 pr-4 py-4 rounded-2xl max-sm:py-2 max-sm:rounded-xl max-sm:text-sm bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                                     required
                                 />
                             </div>
@@ -281,14 +249,14 @@ export default function Signup() {
                             <label className="text-sm font-medium text-gray-700 mb-2 block">Password</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaLock className="text-[#00a884] group-focus-within:text-[#00b884] transition-colors" />
+                                    <FaLock className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
                                 </div>
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Create a strong password"
-                                    className="w-full pl-10 pr-4 py-4 rounded-2xl bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                                    className="w-full pl-10 pr-4 py-4 rounded-2xl max-sm:py-2 max-sm:rounded-xl max-sm:text-sm bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                                     required
                                 />
                             </div>
@@ -298,7 +266,7 @@ export default function Signup() {
                         <button
                             type="submit"
                             disabled={loading || uploadingPhoto}
-                            className={`w-full group relative overflow-hidden bg-gradient-to-r from-[#00a884] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${
+                            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#00a884] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${
                                 loading || uploadingPhoto ? 'opacity-70 cursor-not-allowed' : 'hover:from-[#00b884] hover:to-[#00c884]'
                             }`}
                         >
@@ -325,7 +293,7 @@ export default function Signup() {
                     </form>
 
                     {/* Divider */}
-                    <div className="relative my-8">
+                    <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-gray-300"></div>
                         </div>
@@ -344,20 +312,6 @@ export default function Signup() {
                             <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
-                </div>
-
-                {/* Footer */}
-                <div className="text-center mt-8">
-                    <p className="text-gray-600 text-sm">
-                        By continuing, you agree to our{' '}
-                        <span className="text-[#00a884] hover:text-[#00b884] cursor-pointer transition-colors font-medium">
-                            Terms of Service
-                        </span>{' '}
-                        and{' '}
-                        <span className="text-[#00a884] hover:text-[#00b884] cursor-pointer transition-colors font-medium">
-                            Privacy Policy
-                        </span>
-                    </p>
                 </div>
             </div>
         </div>

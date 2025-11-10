@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import "./globals.css";
 import { Inter } from 'next/font/google';
+import { Toaster } from "react-hot-toast";
 
 const poppins = Inter({
   subsets: ['latin'],
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <Toaster position="top-center" reverseOrder={false} toastOptions={{ style: { background: '#00a884', color: 'white', border: '1px solid #00a884' } }} />
       </body>
     </html>
   );

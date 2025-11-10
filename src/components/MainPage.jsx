@@ -9,7 +9,7 @@ import useProfiles from '@/hooks/chatPage/useProfiles';
 import useGroups from '@/hooks/chatPage/useGroups';
 import useChatHandlers from '@/hooks/chatPage/useChatHandlers';
 import { useRouter } from 'next/navigation';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ChatPage() {
@@ -77,17 +77,6 @@ export default function ChatPage() {
 
     return (
         <div className={`flex flex-col h-full w-full 2xl:px-20 2xl:py-10 sm:px-10 sm:py-5 ${isDark ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'} overflow-hidden justify-center items-center`}>
-            <Toaster
-                position="top-center"
-                reverseOrder={false}
-                toastOptions={{
-                    style: {
-                        background: '#00a884',
-                        color: 'white',
-                        border: '1px solid #00a884',
-                    },
-                }}
-            />
 
             <input
                 type="file"
