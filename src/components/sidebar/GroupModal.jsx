@@ -12,7 +12,7 @@ export default function GroupModal({ availableUsers, onlineStatus, groupName, se
 
                 <div className="mb-4">
                     <label className={`block text-sm mb-2 font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Group Name</label>
-                    <input type="text" value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Enter group name" className={`w-full p-3 rounded-lg ${isDark ? 'bg-gray-700 text-white placeholder-gray-400 focus:ring-[#00a884] border-gray-600' : 'bg-gray-100 text-gray-800 placeholder-gray-400 focus:ring-[#00a884] border-gray-200'} focus:outline-none focus:ring-2 border`} />
+                    <input type="text" value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Enter group name" className={`w-full p-3 rounded-lg ${isDark ? 'bg-gray-700 text-white placeholder-gray-400 focus:ring-[#0084ff] border-gray-600' : 'bg-gray-100 text-gray-800 placeholder-gray-400 focus:ring-[#0084ff] border-gray-200'} focus:outline-none focus:ring-2 border`} />
                 </div>
 
                 <div className="mb-6">
@@ -20,7 +20,7 @@ export default function GroupModal({ availableUsers, onlineStatus, groupName, se
                     <div className={`max-h-48 overflow-y-auto rounded-lg border p-2 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
                         {availableUsers.map((user) => (
                             <div key={user} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`} onClick={() => toggleUserSelection(user)}>
-                                <input type="checkbox" id={`group-user-${user}`} checked={selectedUsers.includes(user)} readOnly className={`w-4 h-4 text-[#00a884] ${isDark ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-300'} rounded focus:ring-[#00a884] focus:ring-2`} />
+                                <input type="checkbox" id={`group-user-${user}`} checked={selectedUsers.includes(user)} readOnly className={`w-4 h-4 text-[#0084ff] ${isDark ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-300'} rounded focus:ring-[#0084ff] focus:ring-2`} />
                                 <label htmlFor={`group-user-${user}`} className={`cursor-pointer flex-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{user}</label>
                                 {onlineStatus[user]?.online && (<div className="w-2 h-2 bg-green-500 rounded-full" title="Online"></div>)}
                             </div>
@@ -30,7 +30,7 @@ export default function GroupModal({ availableUsers, onlineStatus, groupName, se
 
                 <div className="flex gap-3 justify-end">
                     <button onClick={closeGroupModal} className={`px-4 py-2 ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} rounded-lg transition-colors font-medium`}>Cancel</button>
-                    <button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0} className="px-4 py-2 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md">Create Group</button>
+                    <button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0} className="px-4 py-2 bg-[#0084ff] text-white rounded-lg hover:bg-[#00b884] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md">Create Group</button>
                 </div>
             </div>
         </div>

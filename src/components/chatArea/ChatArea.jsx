@@ -60,7 +60,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                                     <HiOutlineUserGroup size={22} />
                                 </div>
                             ) : getProfilePhotoUrl(activeUser) ? (
-                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#00a884]">
+                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#0084ff]">
                                     <Image
                                         src={getProfilePhotoUrl(activeUser)}
                                         alt={activeUser}
@@ -70,7 +70,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                                     />
                                 </div>
                             ) : (
-                                <div className="w-10 h-10 rounded-full bg-[#00a884] flex justify-center items-center text-white font-semibold">
+                                <div className="w-10 h-10 rounded-full bg-[#0084ff] flex justify-center items-center text-white font-semibold">
                                     {activeUser.slice(0, 1).toUpperCase()}
                                 </div>
                             )}

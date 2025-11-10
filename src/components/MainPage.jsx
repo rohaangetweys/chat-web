@@ -39,7 +39,7 @@ export default function ChatPage() {
     if (authChecking) return (
         <div className="h-full w-full flex items-center justify-center bg-gray-50">
             <div className="text-center">
-                <div className="w-16 h-16 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <div className="w-16 h-16 border-4 border-[#0084ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                 <p className="text-gray-600">Checking authentication...</p>
             </div>
         </div>

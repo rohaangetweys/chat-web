@@ -24,7 +24,7 @@ export default function AppHeader({ user, username, handleLogout }) {
         <header className={`px-6 border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} w-full h-20 rounded-3xl flex items-center justify-between mb-3`}>
 
             <div className="flex items-center gap-3">
-                <div className="bg-[#00a884] text-white px-6 h-10 rounded-xl flex items-center justify-center opacity-50 text-xl font-semibold">
+                <div className="bg-[#0084ff] text-white px-6 h-10 rounded-xl flex items-center justify-center text-xl font-semibold">
                     <h1 className="text-2xl font-bold tracking-wide">Chat App</h1>
                 </div>
             </div>
@@ -48,11 +48,11 @@ export default function AppHeader({ user, username, handleLogout }) {
                 <div className="relative" ref={profileDropdownRef}>
                     <button
                         onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                        className={`p-2 rounded-full text-[#00a884] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                        className={`p-2 rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
                             } transition-colors flex items-center gap-2`}
                     >
                         {user?.photoURL ? (
-                            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#00a884]">
+                            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#0084ff]">
                                 <Image
                                     src={user.photoURL}
                                     alt="Profile"
@@ -62,7 +62,7 @@ export default function AppHeader({ user, username, handleLogout }) {
                                 />
                             </div>
                         ) : (
-                            <FaUserCircle className="text-[#00a884] text-[26px]" />
+                            <FaUserCircle className="text-[#0084ff] text-[26px]" />
                         )}
                         <span className="text-sm font-medium hidden md:block">{username}</span>
                     </button>

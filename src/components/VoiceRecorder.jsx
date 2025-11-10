@@ -126,7 +126,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
 
                 <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'} rounded-lg p-4 mb-6 border`}>
                     <div className="flex justify-between items-center mb-3">
-                        <p className={`text-sm font-medium ${isRecording ? 'text-[#00a884]' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <p className={`text-sm font-medium ${isRecording ? 'text-[#0084ff]' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                             {recordingComplete ? "Recording complete" : isRecording ? "Recording..." : "Ready to record"}
                         </p>
                         {isRecording && (
@@ -150,7 +150,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                     {!isRecording && !recordingComplete ? (
                         <button
                             onClick={startRecording}
-                            className="w-full py-3 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium flex items-center justify-center gap-2 shadow-md"
+                            className="w-full py-3 bg-[#0084ff] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium flex items-center justify-center gap-2 shadow-md"
                         >
                             <svg
                                 viewBox="0 0 256 256"
@@ -188,7 +188,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                             </button>
                             <button
                                 onClick={handleSendRecording}
-                                className="flex-1 py-3 bg-[#00a884] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium shadow-md"
+                                className="flex-1 py-3 bg-[#0084ff] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium shadow-md"
                             >
                                 Send Voice Message
                             </button>

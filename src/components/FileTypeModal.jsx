@@ -55,7 +55,7 @@ export default function FileTypeModal({ onClose, onFileTypeSelect }) {
                                 onClick={() => handleOptionClick(option.type)}
                                 className={`w-full flex items-center gap-4 p-4 rounded-lg ${isDark ? 'hover:bg-gray-700 border-transparent hover:border-gray-600' : 'hover:bg-gray-50 border-transparent hover:border-gray-200'} transition-colors text-left group border`}
                             >
-                                <div className={`p-3 rounded-full ${isDark ? 'bg-gray-600 group-hover:bg-[#00a884]' : 'bg-gray-100 group-hover:bg-[#00a884]'} transition-colors`}>
+                                <div className={`p-3 rounded-full ${isDark ? 'bg-gray-600 group-hover:bg-[#0084ff]' : 'bg-gray-100 group-hover:bg-[#0084ff]'} transition-colors`}>
                                     <IconComponent className={`${option.color} group-hover:text-white transition-colors`} size={20} />
                                 </div>
                                 <div className="flex-1">

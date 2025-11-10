@@ -61,7 +61,7 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
             <div className="relative">
                 {contact.type === 'user' ? (
                     profilePhoto ? (
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#00a884] shadow-md">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#0084ff] shadow-md">
                             <Image src={profilePhoto} alt={contact.name} width={48} height={48} className="w-full h-full object-cover" />
                         </div>
                     ) : (
@@ -87,7 +87,7 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
                     </h3>
                     {contact.lastMessage && (
                         <span className={`text-xs whitespace-nowrap ml-2 ${hasUnread
-                            ? 'text-[#00a884] font-semibold'
+                            ? 'text-[#0084ff] font-semibold'
                             : isDark ? 'text-gray-400' : 'text-gray-500'
                             }`}>
                             {formatLastMessageTime(contact.lastMessage.timestamp)}
@@ -105,7 +105,7 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
 
                     {hasUnread && (
                         <div className="shrink-0 ml-2">
-                            <div className="bg-[#00a884] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 font-bold shadow-sm">
+                            <div className="bg-[#0084ff] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 font-bold shadow-sm">
                                 {contact.unreadCount > 99 ? '99+' : contact.unreadCount}
                             </div>
                         </div>

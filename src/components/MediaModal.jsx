@@ -60,7 +60,7 @@ export default function MediaModal({ isOpen, onClose, content, type }) {
                 <div className="absolute -top-12 right-0 flex items-center gap-4">
                     <button
                         onClick={handleDownload}
-                        className="text-white hover:text-gray-300 transition-colors bg-[#00a884] p-2 rounded-full shadow-lg"
+                        className="text-white hover:text-gray-300 transition-colors bg-[#0084ff] p-2 rounded-full shadow-lg"
                         title="Download"
                     >
                         <FaDownload size={18} />

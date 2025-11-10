@@ -8,7 +8,7 @@ const SubmitButton = ({ loading = false, uploadingPhoto = false, loadingText = '
         <button
             type="submit"
             disabled={isDisabled}
-            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#00a884] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${isDisabled
+            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#0084ff] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${isDisabled
                     ? 'opacity-70 cursor-not-allowed'
                     : 'hover:from-[#00b884] hover:to-[#00c884]'
                 } ${className}`}

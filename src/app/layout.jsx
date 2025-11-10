@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           {children}
         </ThemeProvider>
-        <Toaster position="top-center" reverseOrder={false} toastOptions={{ style: { background: '#00a884', color: 'white', border: '1px solid #00a884' } }} />
+        <Toaster position="top-center" reverseOrder={false} toastOptions={{ style: { background: '#0084ff', color: 'white', border: '1px solid #0084ff' } }} />
       </body>
     </html>
   );

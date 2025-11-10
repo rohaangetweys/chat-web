@@ -1,5 +1,6 @@
+'use client';
 import React, { useRef, useState } from 'react';
-import { FaPlay, FaPause } from 'react-icons/fa';
+import { FaPlay, FaPause, FaMicrophone } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 export default function VoiceMessagePlayer({ msg, index, username }) {
@@ -70,23 +71,52 @@ export default function VoiceMessagePlayer({ msg, index, username }) {
 
     return (
         <div className="my-1 w-full max-w-xs md:max-w-sm lg:max-w-md">
-            <div className={`flex items-center gap-3 p-3 rounded-2xl border ${msg.username === username ? 'bg-[#00a884] border-[#00a884]' : 'bg-white border-gray-200'}`}>
-                <button onClick={togglePlayPause} className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${msg.username === username ? 'bg-white text-[#00a884] hover:bg-gray-100' : 'bg-[#00a884] text-white hover:bg-[#00b884]'}`}>
-                    {isPlaying ? <FaPause size={12} /> : <FaPlay size={12} className="ml-0.5" />}
-                </button>
-
-                <div className="flex-1 min-w-0">
-                    <div className="relative h-1 bg-gray-300 rounded-full cursor-pointer mb-1" onClick={handleSeek}>
-                        <div className={`absolute h-full rounded-full transition-all ${msg.username === username ? 'bg-white' : 'bg-[#00a884]'}`} style={{ width: `${progress}%` }} />
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                        <span className={`text-xs ${msg.username === username ? 'text-white' : 'text-gray-600'}`}>{formatDuration(currentTime)}</span>
-                        <span className={`text-xs ${msg.username === username ? 'text-white' : 'text-gray-500'}`}>{formatDuration(msg.duration)}</span>
-                    </div>
+            <div
+                className={`flex items-center gap-3 p-3 rounded-3xl shadow-sm ${
+                    msg.username === username
+                        ? 'bg-[#0084ff] text-white'
+                        : 'bg-[#f1f0f0] text-gray-800'
+                }`}
+            >
+                {/* Microphone Icon */}
+                <div className="w-10 h-10 bg-white flex items-center justify-center rounded-xl shadow-sm">
+                    <FaMicrophone className="text-[#0084ff]" size={18} />
                 </div>
 
-                <audio ref={audioRef} src={msg.message} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onLoadedMetadata={handleLoadedMetadata} preload="metadata" />
+                {/* Play / Pause + Progress */}
+                <div className="flex-1 flex flex-col justify-center">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={togglePlayPause}
+                            className={`shrink-0 w-6 h-6 flex items-center justify-center text-[#0084ff]`}
+                        >
+                            {isPlaying ? <FaPause size={10} /> : <FaPlay size={10} className="ml-0.5" />}
+                        </button>
+
+                        <div
+                            className="relative w-full h-1 bg-gray-300 rounded-full cursor-pointer"
+                            onClick={handleSeek}
+                        >
+                            <div
+                                className="absolute h-full bg-[#0084ff] rounded-full transition-all"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    <span className="text-[11px] text-gray-500 mt-1">
+                        {formatDuration(currentTime)} / {formatDuration(msg.duration)}
+                    </span>
+                </div>
+
+                <audio
+                    ref={audioRef}
+                    src={msg.message}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={handleEnded}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    preload="metadata"
+                />
             </div>
         </div>
     );

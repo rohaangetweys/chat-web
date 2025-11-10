@@ -46,12 +46,12 @@ export default function Login() {
                 <div className="text-center mb-8">
                     <div className="flex justify-center mb-4 max-sm:hidden">
                         <div className="relative">
-                            <div className="w-16 h-16 bg-gradient-to-br from-[#00a884] to-[#00b884] rounded-2xl flex items-center justify-center shadow-lg">
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#0084ff] to-[#00b884] rounded-2xl flex items-center justify-center shadow-lg">
                                 <FaComments className="text-white text-2xl" />
                             </div>
                         </div>
                     </div>
-                    <h1 className="text-4xl max-sm:text-3xl font-bold bg-gradient-to-r from-[#00a884] to-[#00b884] bg-clip-text text-transparent mb-2 max-sm:mb-0">
+                    <h1 className="text-4xl max-sm:text-3xl font-bold bg-gradient-to-r from-[#0084ff] to-[#00b884] bg-clip-text text-transparent mb-2 max-sm:mb-0">
                         Welcome Back
                     </h1>
                     <p className="text-gray-600 text-lg max-sm:text-xs">Sign in to continue your conversations</p>

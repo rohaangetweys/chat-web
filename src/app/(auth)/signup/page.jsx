@@ -117,12 +117,12 @@ export default function Signup() {
                 <div className="text-center mb-8 max-sm:mb-3">
                     <div className="flex justify-center mb-4 max-sm:hidden">
                         <div className="relative">
-                            <div className="w-16 h-16 bg-gradient-to-br from-[#00a884] to-[#00b884] rounded-2xl flex items-center justify-center shadow-lg">
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#0084ff] to-[#00b884] rounded-2xl flex items-center justify-center shadow-lg">
                                 <FaComments className="text-white text-2xl" />
                             </div>
                         </div>
                     </div>
-                    <h1 className="text-4xl max-sm:text-3xl font-bold bg-gradient-to-r from-[#00a884] to-[#00b884] bg-clip-text text-transparent mb-2 max-sm:mb-0">
+                    <h1 className="text-4xl max-sm:text-3xl font-bold bg-gradient-to-r from-[#0084ff] to-[#00b884] bg-clip-text text-transparent mb-2 max-sm:mb-0">
                         Welcome
                     </h1>
                     <p className="text-gray-600 text-lg max-sm:text-xs">Create your account to get started</p>
@@ -137,7 +137,7 @@ export default function Signup() {
                                 className="relative group cursor-pointer"
                                 onClick={handleProfilePhotoClick}
                             >
-                                <div className="w-24 h-24 max-sm:w-18 max-sm:h-18 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-[#00a884] group-hover:shadow-xl">
+                                <div className="w-24 h-24 max-sm:w-18 max-sm:h-18 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-[#0084ff] group-hover:shadow-xl">
                                     {profilePhotoUrl ? (
                                         <Image
                                             src={profilePhotoUrl}
@@ -151,7 +151,7 @@ export default function Signup() {
                                             }}
                                         />
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#00a884] transition-colors">
+                                        <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#0084ff] transition-colors">
                                             <FaCamera size={24} />
                                             <span className="text-xs mt-1 max-sm:text-[10px]">Add Photo</span>
                                         </div>
@@ -183,7 +183,7 @@ export default function Signup() {
 
                             <p className="text-xs text-gray-500 mt-2 text-center">
                                 Click to upload profile photo (optional) <br />
-                                <span className="text-[#00a884]">Max 5MB • JPEG, PNG, etc.</span>
+                                <span className="text-[#0084ff]">Max 5MB • JPEG, PNG, etc.</span>
                             </p>
                         </div>
 
