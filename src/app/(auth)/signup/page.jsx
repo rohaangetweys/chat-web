@@ -1,11 +1,13 @@
 'use client';
 import { useState, useRef } from 'react';
-import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { FaUser, FaEnvelope, FaLock, FaArrowRight, FaComments, FaCamera, FaTimes } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaComments, FaCamera, FaTimes } from 'react-icons/fa';
 import Image from 'next/image';
 import { signup } from '@/lib/firebase/firebaseServices';
+import InputField from '@/components/auth/InputField';
+import SubmitButton from '@/components/auth/SubmitButton';
+import SwitchPage from '@/components/auth/SwitchPage';
 
 export default function Signup() {
     const router = useRouter();
@@ -19,27 +21,20 @@ export default function Signup() {
     const fileInputRef = useRef(null);
 
     const handleProfilePhotoClick = () => {
-        console.log('Profile photo clicked'); // Debug log
         fileInputRef.current?.click();
     };
 
     const handleProfilePhotoChange = async (e) => {
-        console.log('File input changed'); // Debug log
         const file = e.target.files?.[0];
         if (!file) {
-            console.log('No file selected'); // Debug log
             return;
         }
 
-        console.log('File selected:', file.name, file.type, file.size); // Debug log
-
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             toast.error('Please select an image file (JPEG, PNG, etc.)');
             return;
         }
 
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             toast.error('Image size should be less than 5MB');
             return;
@@ -47,9 +42,7 @@ export default function Signup() {
 
         setUploadingPhoto(true);
         try {
-            // Create preview URL
             const previewUrl = URL.createObjectURL(file);
-            console.log('Preview URL created:', previewUrl); // Debug log
             setProfilePhotoUrl(previewUrl);
             setProfilePhoto(file);
             toast.success('Profile photo added!');
@@ -62,7 +55,7 @@ export default function Signup() {
     };
 
     const removeProfilePhoto = (e) => {
-        e.stopPropagation(); // Prevent triggering the file input
+        e.stopPropagation();
         setProfilePhoto(null);
         setProfilePhotoUrl('');
         if (fileInputRef.current) {
@@ -74,23 +67,17 @@ export default function Signup() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
-        // Validate username
         if (!username.trim()) {
             toast.error('Please enter a username');
             setLoading(false);
             return;
         }
-
-        // Validate username format (alphanumeric and underscores)
         const usernameRegex = /^[a-zA-Z0-9_]+$/;
         if (!usernameRegex.test(username)) {
             toast.error('Username can only contain letters, numbers, and underscores');
             setLoading(false);
             return;
         }
-
-        // Validate username length
         if (username.length < 3 || username.length > 20) {
             toast.error('Username must be between 3 and 20 characters');
             setLoading(false);
@@ -124,7 +111,7 @@ export default function Signup() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">            
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">
             <div className="relative z-10 w-full max-w-md max-sm:max-w-2xl max-sm:scale-95">
                 {/* Header Section */}
                 <div className="text-center mb-8 max-sm:mb-3">
@@ -146,7 +133,7 @@ export default function Signup() {
                     <form onSubmit={handleSubmit} className="space-y-6 max-sm:space-y-3">
                         {/* Profile Photo Upload */}
                         <div className="flex flex-col items-center mb-6">
-                            <div 
+                            <div
                                 className="relative group cursor-pointer"
                                 onClick={handleProfilePhotoClick}
                             >
@@ -169,9 +156,9 @@ export default function Signup() {
                                             <span className="text-xs mt-1 max-sm:text-[10px]">Add Photo</span>
                                         </div>
                                     )}
-                                    
+
                                 </div>
-                                
+
                                 {/* Remove button - only show when there's a photo */}
                                 {profilePhotoUrl && (
                                     <button
@@ -190,128 +177,26 @@ export default function Signup() {
                                     </div>
                                 )}
                             </div>
-                            
+
                             {/* Hidden file input */}
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleProfilePhotoChange}
-                                accept="image/*"
-                                className="hidden"
-                            />
-                            
+                            <input type="file" ref={fileInputRef} onChange={handleProfilePhotoChange} accept="image/*" className="hidden" />
+
                             <p className="text-xs text-gray-500 mt-2 text-center">
-                                Click to upload profile photo (optional)
-                                <br />
+                                Click to upload profile photo (optional) <br />
                                 <span className="text-[#00a884]">Max 5MB • JPEG, PNG, etc.</span>
                             </p>
                         </div>
 
-                        {/* Username Field */}
-                        <div className="group">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Username</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaUser className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                                    placeholder="Choose a username"
-                                    className="w-full pl-10 pr-4 py-4 rounded-2xl max-sm:py-2 max-sm:rounded-xl max-sm:text-sm bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                                    required
-                                />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1 max-sm:text-[10px]">3-20 characters, letters, numbers, and underscores only</p>
-                        </div>
+                        <InputField label="Username" type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="Choose a username" Icon={FaUser} required />
+                        <p className="text-xs text-gray-500 mt-1 max-sm:text-[10px]">3-20 characters, letters, numbers, and underscores only</p>
 
-                        {/* Email Field */}
-                        <div className="group">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaEnvelope className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
-                                </div>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email"
-                                    className="w-full pl-10 pr-4 py-4 rounded-2xl max-sm:py-2 max-sm:rounded-xl max-sm:text-sm bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <InputField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" Icon={FaEnvelope} required />
 
-                        {/* Password Field */}
-                        <div className="group">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Password</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaLock className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
-                                </div>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Create a strong password"
-                                    className="w-full pl-10 pr-4 py-4 rounded-2xl max-sm:py-2 max-sm:rounded-xl max-sm:text-sm bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <InputField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a strong password" Icon={FaLock} required />
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={loading || uploadingPhoto}
-                            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#00a884] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${
-                                loading || uploadingPhoto ? 'opacity-70 cursor-not-allowed' : 'hover:from-[#00b884] hover:to-[#00c884]'
-                            }`}
-                        >
-                            <span className="relative z-10 flex items-center justify-center">
-                                {loading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                        Creating Account...
-                                    </>
-                                ) : uploadingPhoto ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                        Uploading Photo...
-                                    </>
-                                ) : (
-                                    <>
-                                        Get Started
-                                        <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#00b884] to-[#00c884] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
+                        <SubmitButton loading={loading} uploadingPhoto={uploadingPhoto} loadingText="Creating Account..." uploadingText="Uploading Photo..." defaultText="Get Started" />
                     </form>
-
-                    {/* Divider */}
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-gray-500">Already have an account?</span>
-                        </div>
-                    </div>
-
-                    {/* Login Link */}
-                    <div className="text-center">
-                        <Link
-                            href="/login"
-                            className="inline-flex items-center text-[#00a884] font-semibold hover:text-[#00b884] transition-colors group"
-                        >
-                            Sign in to your account
-                            <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </div>
+                    <SwitchPage dividerText={'Already have an account?'} linkTo={'/login'} linkText={'Sign in to your account'} />
                 </div>
             </div>
         </div>

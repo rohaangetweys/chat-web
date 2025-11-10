@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { FaEnvelope, FaLock, FaArrowRight, FaComments, FaShieldAlt } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaComments } from 'react-icons/fa';
 import { login } from '@/lib/firebase/firebaseServices';
+import InputField from '@/components/auth/InputField';
+import SubmitButton from '@/components/auth/SubmitButton';
+import SwitchPage from '@/components/auth/SwitchPage';
 
 export default function Login() {
     const router = useRouter();
@@ -38,7 +40,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">            
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">
             <div className="relative z-10 w-full max-w-md max-sm:scale-95">
                 {/* Header Section */}
                 <div className="text-center mb-8">
@@ -58,87 +60,13 @@ export default function Login() {
                 {/* Card */}
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 p-8 transform hover:scale-[1.02] transition-all duration-300">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Email Field */}
-                        <div className="group">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaEnvelope className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
-                                </div>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email"
-                                    className="w-full pl-10 pr-4 py-4 max-sm:py-2 max-sm:text-sm max-sm:rounded-xl  rounded-2xl bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <InputField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" Icon={FaEnvelope} required />
 
-                        {/* Password Field */}
-                        <div className="group">
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Password</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaLock className="text-[#00a884] z-50 group-focus-within:text-[#00b884] transition-colors" />
-                                </div>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your password"
-                                    className="w-full pl-10 pr-4 py-4 max-sm:py-2 max-sm:text-sm max-sm:rounded-xl  rounded-2xl bg-gray-50/80 border border-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a884] focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <InputField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" Icon={FaLock} required />
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#00a884] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${
-                                loading ? 'opacity-70 cursor-not-allowed' : 'hover:from-[#00b884] hover:to-[#00c884]'
-                            }`}
-                        >
-                            <span className="relative z-10 flex items-center justify-center">
-                                {loading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                        Signing In...
-                                    </>
-                                ) : (
-                                    <>
-                                        Sign In
-                                        <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#00b884] to-[#00c884] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
+                        <SubmitButton loading={loading} loadingText="Signing In..." defaultText="Sign In" />
                     </form>
-
-                    {/* Divider */}
-                    <div className="relative my-8">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-gray-500">New to our platform?</span>
-                        </div>
-                    </div>
-
-                    {/* Signup Link */}
-                    <div className="text-center">
-                        <Link
-                            href="/signup"
-                            className="inline-flex items-center text-[#00a884] font-semibold hover:text-[#00b884] transition-colors group"
-                        >
-                            Create an account
-                            <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Link>
-                    </div>
+                    <SwitchPage dividerText={'New to our platform?'} linkTo={'/signup'} linkText={'Create an account'} />
                 </div>
             </div>
         </div>
