@@ -8,8 +8,16 @@ import { HiOutlineUserGroup } from 'react-icons/hi2';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function ChatArea({ activeUser, chat = [], username, uploading, fileInputRef, onOpenMedia, activeChatType, onShowVoiceRecorder, onPaperClipClick, onSendMessage, userProfiles, onlineStatus, groups, isMobileView, onBackToSidebar, onStartVoiceCall }) {
+export default function ChatArea({ activeUser, chat = [], username, uploading, fileInputRef, onOpenMedia, activeChatType, onPaperClipClick, onSendMessage, userProfiles, onlineStatus, groups, isMobileView, onBackToSidebar, onStartVoiceCall }) {
     const [message, setMessage] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingComplete, setRecordingComplete] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [audioBlob, setAudioBlob] = useState(null);
+    
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const durationIntervalRef = useRef(null);
     const messagesEndRef = useRef(null);
     const { isDark } = useTheme();
 
@@ -28,9 +36,68 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
         }
     };
 
-    const handleVoiceRecordClick = () => {
+    const startRecording = async () => {
         if (!activeUser) return;
-        onShowVoiceRecorder();
+        
+        setIsRecording(true);
+        setRecordingComplete(false);
+        setDuration(0);
+        setAudioBlob(null);
+        audioChunksRef.current = [];
+
+        durationIntervalRef.current = setInterval(() => {
+            setDuration(prev => prev + 1);
+        }, 1000);
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunksRef.current.push(event.data);
+            };
+
+            mediaRecorderRef.current.onstop = () => {
+                setRecordingComplete(true);
+                const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+                setAudioBlob(blob);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorderRef.current.start();
+        } catch (err) {
+            console.error("Microphone access error:", err);
+            alert("Microphone access is blocked or unsupported on this device.");
+            stopRecording();
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.stop();
+        }
+        if (durationIntervalRef.current) {
+            clearInterval(durationIntervalRef.current);
+        }
+        setIsRecording(false);
+    };
+
+    const cancelRecording = () => {
+        stopRecording();
+        setRecordingComplete(false);
+        setAudioBlob(null);
+        setDuration(0);
+    };
+
+    const sendRecording = () => {
+        if (audioBlob) {
+            // Call the parent's sendMessage function with the audio blob
+            // You'll need to modify your onSendMessage to handle audio files
+            onSendMessage('', 'audio', audioBlob, duration);
+            setRecordingComplete(false);
+            setAudioBlob(null);
+            setDuration(0);
+        }
     };
 
     const handleKeyDown = (e) => {
@@ -160,7 +227,25 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
             </div>
 
             {activeUser && (
-                <ChatInput activeUser={activeUser} uploading={uploading} fileInputRef={fileInputRef} onPaperClipClick={onPaperClipClick} onShowVoiceRecorder={handleVoiceRecordClick} onSendMessage={sendMessage} message={message} setMessage={setMessage} onKeyDown={handleKeyDown} activeChatType={activeChatType} />
+                <ChatInput 
+                    activeUser={activeUser} 
+                    uploading={uploading} 
+                    fileInputRef={fileInputRef} 
+                    onPaperClipClick={onPaperClipClick} 
+                    onStartRecording={startRecording}
+                    onStopRecording={stopRecording}
+                    onCancelRecording={cancelRecording}
+                    onSendRecording={sendRecording}
+                    isRecording={isRecording}
+                    recordingComplete={recordingComplete}
+                    duration={duration}
+                    audioBlob={audioBlob}
+                    onSendMessage={sendMessage} 
+                    message={message} 
+                    setMessage={setMessage} 
+                    onKeyDown={handleKeyDown} 
+                    activeChatType={activeChatType} 
+                />
             )}
         </>
     );

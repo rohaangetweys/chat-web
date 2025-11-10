@@ -70,8 +70,23 @@ export default function ChatPage() {
                 </div>
 
                 <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <ChatArea fileInputRef={fileInputRef} activeUser={activeUser} chat={chat} uploading={uploading} username={username} onOpenMedia={openMediaModal} activeChatType={activeChatType} onShowVoiceRecorder={() => setShowVoiceRecorder(true)} onPaperClipClick={handlePaperClipClick} onSendMessage={sendMessage} userProfiles={userProfiles} onlineStatus={onlineStatus} groups={groups} isMobileView={isMobileView} onBackToSidebar={handleBackToSidebar} onStartVoiceCall={startVoiceCall} />
-
+                    <ChatArea
+                        fileInputRef={fileInputRef}
+                        activeUser={activeUser}
+                        chat={chat}
+                        uploading={uploading}
+                        username={username}
+                        onOpenMedia={openMediaModal}
+                        activeChatType={activeChatType}
+                        onPaperClipClick={handlePaperClipClick}
+                        onSendMessage={sendMessage}  // Make sure this function can handle audio files
+                        userProfiles={userProfiles}
+                        onlineStatus={onlineStatus}
+                        groups={groups}
+                        isMobileView={isMobileView}
+                        onBackToSidebar={handleBackToSidebar}
+                        onStartVoiceCall={startVoiceCall}
+                    />
                     <ModalsManager modalContent={modalContent} modalType={modalType} showFileTypeModal={showFileTypeModal} setShowFileTypeModal={setShowFileTypeModal} showVoiceRecorder={showVoiceRecorder} setShowVoiceRecorder={setShowVoiceRecorder} onFileTypeSelect={handleFileTypeSelect} onVoiceComplete={handleVoiceRecordComplete} closeMediaModal={closeMediaModal} />
                 </div>
             </div>
