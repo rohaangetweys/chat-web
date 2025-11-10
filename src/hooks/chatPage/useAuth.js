@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { logout } from '@/lib/firebase/firebaseServices';
-import { auth } from '@/lib/firebase/firebaseConfig';
+import { logout } from '@/lib/firebaseServices';
+import { auth } from '@/lib/firebaseConfig';
 
 export default function useAuth() {
     const [user, setUser] = useState(null);

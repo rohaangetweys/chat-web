@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { FaEnvelope, FaLock, FaComments } from 'react-icons/fa';
-import { login } from '@/lib/firebase/firebaseServices';
+import { login } from '@/lib/firebaseServices';
 import InputField from '@/components/auth/InputField';
 import SubmitButton from '@/components/auth/SubmitButton';
 import SwitchPage from '@/components/auth/SwitchPage';

@@ -221,18 +221,7 @@ export default function ChatArea({
                 </div>
             </div>
 
-            <ChatInput
-                activeUser={activeUser}
-                uploading={uploading}
-                fileInputRef={fileInputRef}
-                onPaperClipClick={onPaperClipClick}
-                onShowVoiceRecorder={handleVoiceRecordClick}
-                onSendMessage={sendMessage}
-                message={message}
-                setMessage={setMessage}
-                onKeyDown={handleKeyDown}
-                activeChatType={activeChatType}
-            />
+            <ChatInput activeUser={activeUser} uploading={uploading} fileInputRef={fileInputRef} onPaperClipClick={onPaperClipClick} onShowVoiceRecorder={handleVoiceRecordClick} onSendMessage={sendMessage} message={message} setMessage={setMessage} onKeyDown={handleKeyDown} activeChatType={activeChatType} />
         </>
     );
 }

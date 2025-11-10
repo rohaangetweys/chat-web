@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { FaUser, FaEnvelope, FaLock, FaComments, FaCamera, FaTimes } from 'react-icons/fa';
 import Image from 'next/image';
-import { signup } from '@/lib/firebase/firebaseServices';
+import { signup } from '@/lib/firebaseServices';
 import InputField from '@/components/auth/InputField';
 import SubmitButton from '@/components/auth/SubmitButton';
 import SwitchPage from '@/components/auth/SwitchPage';

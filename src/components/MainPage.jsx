@@ -22,30 +22,30 @@ export default function ChatPage() {
     const [showSidebar, setShowSidebar] = useState(true);
 
     const {
-        activeUser,
-        setActiveUser,
-        activeChatType,
-        setActiveChatType,
-        chat,
-        uploading,
-        fileInputRef,
-        isMobileView,
-        showVoiceRecorder,
-        setShowVoiceRecorder,
-        showFileTypeModal,
-        setShowFileTypeModal,
-        modalContent,
-        modalType,
-        openMediaModal,
-        closeMediaModal,
-        handleFileInputChange,
-        handleVoiceRecordComplete,
-        createGroupChat,
-        sendMessage,
-        handlePaperClipClick,
-        handleFileTypeSelect,
-        unreadCounts,
-        setActiveUserHandler,
+        activeUser, 
+        setActiveUser, 
+        activeChatType, 
+        setActiveChatType, 
+        chat, 
+        uploading, 
+        fileInputRef, 
+        isMobileView, 
+        showVoiceRecorder, 
+        setShowVoiceRecorder, 
+        showFileTypeModal, 
+        setShowFileTypeModal, 
+        modalContent, 
+        modalType, 
+        openMediaModal, 
+        closeMediaModal, 
+        handleFileInputChange, 
+        handleVoiceRecordComplete, 
+        createGroupChat, 
+        sendMessage, 
+        handlePaperClipClick, 
+        handleFileTypeSelect, 
+        unreadCounts, 
+        setActiveUserHandler, 
     } = useChatHandlers({ username, users, groups, setShowSidebar });
 
     const handleBackToSidebar = () => {
@@ -91,53 +91,13 @@ export default function ChatPage() {
 
             <div className={`flex w-full h-full overflow-hidden border ${isDark ? 'border-gray-600 gap-0! rounded-3xl' : 'border-gray-300'} gap-4`}>
                 <div className={`flex rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-1/4'}`}>
-                    <Sidebar
-                        activeUser={activeUser}
-                        setActiveUser={setActiveUserHandler}
-                        setUsers={() => { }}
-                        username={username}
-                        users={users}
-                        groups={groups}
-                        activeChatType={activeChatType}
-                        setActiveChatType={setActiveChatType}
-                        onCreateGroup={createGroupChat}
-                        unreadCounts={unreadCounts}
-                        userProfiles={userProfiles}
-                        onlineStatus={onlineStatus}
-                    />
+                    <Sidebar activeUser={activeUser} setActiveUser={setActiveUserHandler} setUsers={() => { }} username={username} users={users} groups={groups} activeChatType={activeChatType} setActiveChatType={setActiveChatType} onCreateGroup={createGroupChat} unreadCounts={unreadCounts} userProfiles={userProfiles} onlineStatus={onlineStatus} />
                 </div>
 
                 <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <ChatArea
-                        fileInputRef={fileInputRef}
-                        activeUser={activeUser}
-                        chat={chat}
-                        uploading={uploading}
-                        username={username}
-                        onOpenMedia={openMediaModal}
-                        activeChatType={activeChatType}
-                        onShowVoiceRecorder={() => setShowVoiceRecorder(true)}
-                        onPaperClipClick={handlePaperClipClick}
-                        onSendMessage={sendMessage}
-                        userProfiles={userProfiles}
-                        onlineStatus={onlineStatus}
-                        groups={groups}
-                        isMobileView={isMobileView}
-                        onBackToSidebar={handleBackToSidebar}
-                        onStartVoiceCall={startVoiceCall}
-                    />
+                    <ChatArea fileInputRef={fileInputRef} activeUser={activeUser} chat={chat} uploading={uploading} username={username} onOpenMedia={openMediaModal} activeChatType={activeChatType} onShowVoiceRecorder={() => setShowVoiceRecorder(true)} onPaperClipClick={handlePaperClipClick} onSendMessage={sendMessage} userProfiles={userProfiles} onlineStatus={onlineStatus} groups={groups} isMobileView={isMobileView} onBackToSidebar={handleBackToSidebar} onStartVoiceCall={startVoiceCall} />
 
-                    <ModalsManager
-                        modalContent={modalContent}
-                        modalType={modalType}
-                        showFileTypeModal={showFileTypeModal}
-                        setShowFileTypeModal={setShowFileTypeModal}
-                        showVoiceRecorder={showVoiceRecorder}
-                        setShowVoiceRecorder={setShowVoiceRecorder}
-                        onFileTypeSelect={handleFileTypeSelect}
-                        onVoiceComplete={handleVoiceRecordComplete}
-                        closeMediaModal={closeMediaModal}
-                    />
+                    <ModalsManager modalContent={modalContent} modalType={modalType} showFileTypeModal={showFileTypeModal} setShowFileTypeModal={setShowFileTypeModal} showVoiceRecorder={showVoiceRecorder} setShowVoiceRecorder={setShowVoiceRecorder} onFileTypeSelect={handleFileTypeSelect} onVoiceComplete={handleVoiceRecordComplete} closeMediaModal={closeMediaModal} />
                 </div>
             </div>
         </div>

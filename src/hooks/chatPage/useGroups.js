@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
-import { db } from '@/lib/firebase/firebaseConfig';
+import { db } from '@/lib/firebaseConfig';
 
 export default function useGroups(username) {
     const [groups, setGroups] = useState([]);

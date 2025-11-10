@@ -1,10 +1,8 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, query, orderByKey, limitToLast } from 'firebase/database';
-import { db } from '@/lib/firebase/firebaseConfig';
+import { db } from '@/lib/firebaseConfig';
 import SidebarHeader from './SidebarHeader';
-import SidebarSearch from './SidebarSearch';
-import SidebarFilters from './SidebarFilters';
 import ContactList from './ContactList';
 import GroupModal from './GroupModal';
 import { formatLastMessageTime, getLastMessagePreview } from './utils';
@@ -86,12 +84,12 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            setLastMessages(prev => ({ 
-              ...prev, 
-              [user]: { 
-                ...lastMessage, 
-                timestamp: lastMessage.timestamp || Date.now() 
-              } 
+            setLastMessages(prev => ({
+              ...prev,
+              [user]: {
+                ...lastMessage,
+                timestamp: lastMessage.timestamp || Date.now()
+              }
             }));
           } else {
             setLastMessages(prev => ({ ...prev, [user]: null }));
@@ -106,8 +104,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       unsubscribeFunctions.push(unsubscribe);
     });
 
-    return () => { 
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe()); 
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
   }, [availableUsers, username]);
 
@@ -120,14 +118,12 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       const lastMessageQuery = query(messagesRef, orderByKey(), limitToLast(1));
 
       const unsubscribe = onValue(lastMessageQuery, (snapshot) => {
-        console.log(`Group ${group.id} last message snapshot:`, snapshot.exists());
-        
         if (snapshot.exists()) {
           const messages = [];
           snapshot.forEach((child) => {
             const messageData = child.val();
-            messages.push({ 
-              id: child.key, 
+            messages.push({
+              id: child.key,
               ...messageData,
               timestamp: messageData.timestamp || Date.now()
             });
@@ -135,20 +131,17 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            console.log(`Group ${group.id} last message:`, lastMessage);
-            setLastMessages(prev => ({ 
-              ...prev, 
-              [group.id]: { 
-                ...lastMessage, 
-                timestamp: lastMessage.timestamp || Date.now() 
-              } 
+            setLastMessages(prev => ({
+              ...prev,
+              [group.id]: {
+                ...lastMessage,
+                timestamp: lastMessage.timestamp || Date.now()
+              }
             }));
           } else {
-            console.log(`Group ${group.id}: No messages found`);
             setLastMessages(prev => ({ ...prev, [group.id]: null }));
           }
         } else {
-          console.log(`Group ${group.id}: Snapshot doesn't exist`);
           setLastMessages(prev => ({ ...prev, [group.id]: null }));
         }
       }, (error) => {
@@ -158,8 +151,8 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       unsubscribeFunctions.push(unsubscribe);
     });
 
-    return () => { 
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe()); 
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
   }, [groups, username]);
 
@@ -170,18 +163,16 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       const lastMessage = lastMessages[user];
       const timestamp = lastMessage?.timestamp || 0;
       const unreadCount = unreadCounts[user] || 0;
-      
-      console.log(`User ${user}: unreadCount = ${unreadCount}`);
-      
-      allContacts.push({ 
-        type: 'user', 
-        id: user, 
-        name: getDisplayName(user), 
-        username: user, 
-        lastMessage: lastMessage, 
+
+      allContacts.push({
+        type: 'user',
+        id: user,
+        name: getDisplayName(user),
+        username: user,
+        lastMessage: lastMessage,
         timestamp: timestamp,
-        unreadCount: unreadCount, 
-        online: onlineStatus[user]?.online || false 
+        unreadCount: unreadCount,
+        online: onlineStatus[user]?.online || false
       });
     });
 
@@ -189,16 +180,14 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       const lastMessage = lastMessages[group.id];
       const timestamp = lastMessage?.timestamp || 0;
       const unreadCount = unreadCounts[group.id] || 0;
-      
-      console.log(`Group ${group.id}: unreadCount = ${unreadCount}`);
-      
-      allContacts.push({ 
-        type: 'group', 
-        id: group.id, 
-        name: group.name, 
-        lastMessage: lastMessage, 
+
+      allContacts.push({
+        type: 'group',
+        id: group.id,
+        name: group.name,
+        lastMessage: lastMessage,
         timestamp: timestamp,
-        unreadCount: unreadCount 
+        unreadCount: unreadCount
       });
     });
 
@@ -208,10 +197,10 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       }
       if (a.timestamp && !b.timestamp) return -1;
       if (!a.timestamp && b.timestamp) return 1;
-      
+
       if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
       if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
-      
+
       return a.name.localeCompare(b.name);
     });
 
@@ -246,24 +235,24 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
       const searchResults = [];
 
       filteredGroups.forEach((group) => {
-        searchResults.push({ 
-          type: 'group', 
-          id: group.id, 
-          name: group.name, 
-          lastMessage: lastMessages[group.id], 
-          unreadCount: unreadCounts[group.id] || 0 
+        searchResults.push({
+          type: 'group',
+          id: group.id,
+          name: group.name,
+          lastMessage: lastMessages[group.id],
+          unreadCount: unreadCounts[group.id] || 0
         });
       });
 
       filteredUsers.forEach((user) => {
-        searchResults.push({ 
-          type: 'user', 
-          id: user, 
-          name: getDisplayName(user), 
-          username: user, 
-          lastMessage: lastMessages[user], 
-          unreadCount: unreadCounts[user] || 0, 
-          online: onlineStatus[user]?.online || false 
+        searchResults.push({
+          type: 'user',
+          id: user,
+          name: getDisplayName(user),
+          username: user,
+          lastMessage: lastMessages[user],
+          unreadCount: unreadCounts[user] || 0,
+          online: onlineStatus[user]?.online || false
         });
       });
 
@@ -271,7 +260,7 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     }
 
     let filtered = sortedContacts;
-    
+
     switch (activeFilter) {
       case 'unread':
         filtered = sortedContacts.filter(contact => contact.unreadCount > 0);
@@ -290,34 +279,14 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
   return (
     <>
       <div className={`w-full h-full ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-r flex flex-col shadow-lg`}>
-        <SidebarHeader username={username} getProfilePhoto={getProfilePhoto} />
-        <SidebarSearch searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} />
-        <SidebarFilters activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
+        <SidebarHeader username={username} getProfilePhoto={getProfilePhoto} searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
         <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-          <ContactList 
-            contacts={filteredContacts} 
-            activeUser={activeUser} 
-            activeChatType={activeChatType} 
-            handleUserClick={handleUserClick} 
-            handleGroupClick={handleGroupClick} 
-            getProfilePhoto={getProfilePhoto} 
-            getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} 
-            formatLastMessageTime={(ts) => formatLastMessageTime(ts)} 
-          />
+          <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={getProfilePhoto} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} />
         </div>
       </div>
 
       {showGroupModal && (
-        <GroupModal 
-          availableUsers={availableUsers} 
-          onlineStatus={onlineStatus} 
-          groupName={groupName} 
-          setGroupName={setGroupName} 
-          selectedUsers={selectedUsers} 
-          toggleUserSelection={toggleUserSelection} 
-          closeGroupModal={closeGroupModal} 
-          handleCreateGroup={handleCreateGroup} 
-        />
+        <GroupModal availableUsers={availableUsers} onlineStatus={onlineStatus} groupName={groupName} setGroupName={setGroupName} selectedUsers={selectedUsers} toggleUserSelection={toggleUserSelection} closeGroupModal={closeGroupModal} handleCreateGroup={handleCreateGroup} />
       )}
     </>
   );
