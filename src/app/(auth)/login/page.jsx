@@ -41,7 +41,7 @@ export default function Login() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">
-            <div className="relative z-10 w-full max-w-md max-sm:scale-95">
+            <div className="relative z-10 w-full max-w-md scale-90">
                 {/* Header Section */}
                 <div className="text-center mb-8">
                     <div className="flex justify-center mb-4 max-sm:hidden">

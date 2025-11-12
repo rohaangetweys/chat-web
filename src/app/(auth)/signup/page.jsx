@@ -305,7 +305,7 @@ export default function Signup() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">
-            <div className="relative z-10 w-full max-w-md max-sm:max-w-2xl">
+            <div className="relative scale-90 z-10 w-full max-w-md max-sm:max-w-2xl">
                 <div className="text-center mb-6 max-sm:mb-4">
                     <div className="flex justify-center mb-3 max-sm:mb-2">
                         <div className="relative">

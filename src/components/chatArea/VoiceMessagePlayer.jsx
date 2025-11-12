@@ -73,7 +73,7 @@ export default function VoiceMessagePlayer({ msg, index, username }) {
         <div className="my-1 w-full max-w-xs md:max-w-sm lg:max-w-md">
             <div
                 className={`flex items-center gap-3 p-3 rounded-3xl shadow-sm ${msg.username === username
-                        ? 'bg-[#0084ff] text-white'
+                        ? 'bg-[#fff] text-white'
                         : 'bg-[#f1f0f0] text-gray-800'
                     }`}
             >

@@ -108,7 +108,15 @@ export default function ChatPage() {
             </div>
 
             {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && (
-                <AudioCall callState={callState} onCallEnd={handleCallEnd} onCallAccept={handleCallAccept} onCallReject={handleCallReject} username={username} userProfiles={userProfiles} />
+                <AudioCall 
+                    callState={callState} 
+                    onCallEnd={handleCallEnd} 
+                    onCallAccept={handleCallAccept} 
+                    onCallReject={handleCallReject} 
+                    username={username} 
+                    userProfiles={userProfiles} 
+                    setCallState={setCallState}
+                />
             )}
         </div>
     );
