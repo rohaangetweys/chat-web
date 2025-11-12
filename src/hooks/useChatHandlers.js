@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ref, onValue, push, set, serverTimestamp, off, remove, update } from 'firebase/database';
+import { ref, onValue, push, set, serverTimestamp, off, remove, update, get } from 'firebase/database';
 import { toast } from 'react-hot-toast';
 import { db } from '@/lib/firebaseConfig';
 
@@ -16,6 +16,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
     const [showFileTypeModal, setShowFileTypeModal] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
     const [blockedUsers, setBlockedUsers] = useState([]);
+    const [clearedChats, setClearedChats] = useState({});
 
     const fileInputRef = useRef(null);
 
@@ -38,7 +39,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         return () => window.removeEventListener('resize', checkMobile);
     }, [activeUser, setShowSidebar]);
 
-    // Load blocked users
     useEffect(() => {
         if (!username) return;
 
@@ -59,12 +59,30 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
     }, [username]);
 
     useEffect(() => {
+        if (!username) return;
+
+        const clearedChatsRef = ref(db, `clearedChats/${username}`);
+        const unsub = onValue(clearedChatsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const clearedData = {};
+                snapshot.forEach((child) => {
+                    clearedData[child.key] = child.val();
+                });
+                setClearedChats(clearedData);
+            } else {
+                setClearedChats({});
+            }
+        });
+
+        return () => unsub();
+    }, [username]);
+
+    useEffect(() => {
         if (!activeUser || !username) {
             setChat([]);
             return;
         }
 
-        // Check if user is blocked
         if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
             setChat([]);
             return;
@@ -81,16 +99,27 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         console.log('Setting up chat listener for:', activeUser, 'Type:', activeChatType);
 
         const unsub = onValue(chatRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                setChat([]);
+                return;
+            }
+
             const msgs = [];
+            const clearedKey = activeChatType === 'individual' ? activeUser : `group_${activeUser}`;
+            const clearTimestamp = clearedChats[clearedKey] || 0;
+
             snapshot.forEach((child) => {
                 const msgData = child.val();
-                msgs.push({
-                    id: child.key,
-                    ...msgData
-                });
+                if (msgData.timestamp > clearTimestamp) {
+                    msgs.push({
+                        id: child.key,
+                        ...msgData
+                    });
+                }
             });
 
-            console.log('Received messages:', msgs.length);
+            msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            console.log('Received messages after filtering:', msgs.length);
             setChat(msgs);
 
             markMessagesAsRead(activeUser, activeChatType);
@@ -102,7 +131,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             console.log('Cleaning up chat listener for:', activeUser);
             unsub();
         };
-    }, [activeUser, username, activeChatType, blockedUsers]);
+    }, [activeUser, username, activeChatType, blockedUsers, clearedChats]);
 
     useEffect(() => {
         if (!username) return;
@@ -134,13 +163,17 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 }
 
                 const messages = [];
+                const clearedTimestamp = clearedChats[user] || 0;
+
                 snapshot.forEach(child => {
                     const msgData = child.val();
-                    messages.push({
-                        id: child.key,
-                        ...msgData,
-                        timestamp: msgData.timestamp ?? 0
-                    });
+                    if (msgData.timestamp > clearedTimestamp) {
+                        messages.push({
+                            id: child.key,
+                            ...msgData,
+                            timestamp: msgData.timestamp ?? 0
+                        });
+                    }
                 });
 
                 messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
@@ -175,13 +208,17 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 }
 
                 const messages = [];
+                const clearedTimestamp = clearedChats[`group_${groupId}`] || 0;
+
                 snapshot.forEach((child) => {
                     const msgData = child.val();
-                    messages.push({
-                        id: child.key,
-                        ...msgData,
-                        timestamp: msgData.timestamp ?? 0
-                    });
+                    if (msgData.timestamp > clearedTimestamp) {
+                        messages.push({
+                            id: child.key,
+                            ...msgData,
+                            timestamp: msgData.timestamp ?? 0
+                        });
+                    }
                 });
 
                 messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
@@ -211,7 +248,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             console.log('Cleaning up unread count listeners');
             unsubscribeFunctions.forEach(unsub => unsub && unsub());
         };
-    }, [users, groups, username, blockedUsers]);
+    }, [users, groups, username, blockedUsers, clearedChats]);
 
     const blockUser = async (userId) => {
         if (!username || !userId) {
@@ -228,7 +265,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
             toast.success(`User ${userId} blocked successfully`);
 
-            // If the blocked user is currently active, clear the chat
             if (activeUser === userId) {
                 setActiveUser('');
                 setChat([]);
@@ -262,47 +298,15 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
 
         try {
-            if (type === 'individual') {
-                const chatId = username < target ? `${username}_${target}` : `${target}_${username}`;
-                const chatRef = ref(db, `chats/${chatId}`);
-
-                const snapshot = await onValue(chatRef, (snap) => {
-                    if (snap.exists()) {
-                        const messages = [];
-                        snap.forEach((child) => {
-                            messages.push({
-                                id: child.key,
-                                ...child.val()
-                            });
-                        });
-
-                        const userMessages = messages.filter(msg => msg.username === username);
-
-                        if (userMessages.length === 0) {
-                            toast.error('No messages to clear');
-                            return;
-                        }
-
-                        const deletePromises = userMessages.map(msg =>
-                            remove(ref(db, `chats/${chatId}/${msg.id}`))
-                        );
-
-                        Promise.all(deletePromises)
-                            .then(() => {
-                                toast.success('Your messages cleared successfully');
-                            })
-                            .catch(error => {
-                                console.error('Error clearing messages:', error);
-                                toast.error('Failed to clear messages');
-                            });
-                    } else {
-                        toast.error('No chat history found');
-                    }
-                }, { onlyOnce: true });
-            } else {
-                const messagesRef = ref(db, `groupChats/${target}/messages`);
-                await remove(messagesRef);
-                toast.success('Group chat cleared successfully');
+            const clearKey = type === 'individual' ? target : `group_${target}`;
+            const clearRef = ref(db, `clearedChats/${username}/${clearKey}`);
+            
+            await set(clearRef, Date.now());
+            
+            toast.success('Chat cleared successfully');
+            
+            if (activeUser === target && activeChatType === type) {
+                setChat([]);
             }
         } catch (error) {
             console.error('Error clearing chat:', error);

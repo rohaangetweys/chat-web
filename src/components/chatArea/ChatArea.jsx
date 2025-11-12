@@ -139,7 +139,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
 
     const handleClearChat = () => {
         if (activeUser) {
-            onClearChat();
+            onClearChat(activeUser, activeChatType);
             setShowOptions(false);
         }
     };
