@@ -64,12 +64,12 @@ export default function ChatPage() {
 
             <AppHeader user={user} username={username} handleLogout={handleLogout} />
 
-            <div className={`flex w-full h-full overflow-hidden border ${isDark ? 'border-gray-600 gap-0! rounded-3xl' : 'border-gray-300'} gap-4`}>
-                <div className={`flex rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-1/4'}`}>
+            <div className={`flex w-full h-full overflow-hidden border ${isDark ? 'border-gray-600 gap-0! rounded-t-3xl' : 'border-gray-300'} gap-4`}>
+                <div className={`flex rounded-t-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'flex' : 'hidden') : 'flex'} ${isMobileView ? 'w-full' : 'w-[30%]'}`}>
                     <Sidebar activeUser={activeUser} setActiveUser={setActiveUserHandler} setUsers={() => { }} username={username} users={users} groups={groups} activeChatType={activeChatType} setActiveChatType={setActiveChatType} onCreateGroup={createGroupChat} unreadCounts={unreadCounts} userProfiles={userProfiles} onlineStatus={onlineStatus} />
                 </div>
 
-                <div className={`rounded-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div className={`rounded-t-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
                     <ChatArea
                         fileInputRef={fileInputRef}
                         activeUser={activeUser}

@@ -50,7 +50,7 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
     return (
         <div
             onClick={handleClick}
-            className={`flex items-center gap-3 p-3 cursor-pointer border-b ${isDark ? 'border-gray-600' : 'border-gray-100'
+            className={`flex items-center gap-2 p-2 cursor-pointer border-b ${isDark ? 'border-gray-600' : 'border-gray-100'
                 } transition-colors ${isActive
                     ? isDark ? 'bg-gray-700' : 'bg-gray-200'
                     : hasUnread
@@ -61,32 +61,32 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
             <div className="relative">
                 {contact.type === 'user' ? (
                     profilePhoto ? (
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#0084ff] shadow-md">
-                            <Image src={profilePhoto} alt={contact.name} width={48} height={48} className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-[#0084ff]">
+                            <Image src={profilePhoto} alt={contact.name} width={40} height={40} className="w-full h-full object-cover" />
                         </div>
                     ) : (
-                        <h2 className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white shadow-md" style={{ backgroundColor: getRandomColor() }}>
+                        <h2 className="w-10 h-10 rounded-full flex items-center justify-center text-lg text-white" style={{ backgroundColor: getRandomColor() }}>
                             {contact.name.slice(0, 1).toUpperCase()}
                         </h2>
                     )
                 ) : (
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white bg-indigo-500 shadow-md">
-                        <HiOutlineUserGroup size={24} />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg text-white bg-indigo-500">
+                        <HiOutlineUserGroup size={20} />
                     </div>
                 )}
 
                 {contact.type === 'user' && contact.online && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></div>
                 )}
             </div>
 
             <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-1">
-                    <h3 className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                <div className="flex justify-between items-start mb-0.5">
+                    <h3 className={`font-semibold text-sm truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
                         {contact.name}
                     </h3>
                     {contact.lastMessage && (
-                        <span className={`text-xs whitespace-nowrap ml-2 ${hasUnread
+                        <span className={`text-xs whitespace-nowrap ml-1 ${hasUnread
                             ? 'text-[#0084ff] font-semibold'
                             : isDark ? 'text-gray-400' : 'text-gray-500'
                             }`}>
@@ -96,7 +96,7 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
                 </div>
 
                 <div className="flex justify-between items-center">
-                    <p className={`text-sm truncate ${hasUnread
+                    <p className={`text-xs truncate ${hasUnread
                         ? isDark ? 'text-gray-200 font-medium' : 'text-gray-800 font-medium'
                         : isDark ? 'text-gray-400' : 'text-gray-500'
                         }`}>
@@ -104,8 +104,8 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
                     </p>
 
                     {hasUnread && (
-                        <div className="shrink-0 ml-2">
-                            <div className="bg-[#0084ff] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 font-bold shadow-sm">
+                        <div className="shrink-0 ml-1">
+                            <div className="bg-[#0084ff] text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 font-bold">
                                 {contact.unreadCount > 99 ? '99+' : contact.unreadCount}
                             </div>
                         </div>

@@ -91,8 +91,6 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
 
     const sendRecording = () => {
         if (audioBlob) {
-            // Call the parent's sendMessage function with the audio blob
-            // You'll need to modify your onSendMessage to handle audio files
             onSendMessage('', 'audio', audioBlob, duration);
             setRecordingComplete(false);
             setAudioBlob(null);
@@ -111,51 +109,51 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
     return (
         <>
             {activeUser ? (
-                <div className={`flex items-center justify-between p-4 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-b shadow-sm`}>
-                    <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-between p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-b`}>
+                    <div className="flex items-center gap-2">
                         {isMobileView && (
                             <button
                                 onClick={onBackToSidebar}
-                                className={`p-2 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
+                                className={`p-1.5 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'} transition-colors`}
                             >
-                                <FaArrowLeft size={18} />
+                                <FaArrowLeft size={16} />
                             </button>
                         )}
                         <div className="relative">
                             {activeChatType === 'group' ? (
-                                <div className="w-10 h-10 rounded-full bg-indigo-500 flex justify-center items-center text-white">
-                                    <HiOutlineUserGroup size={22} />
+                                <div className="w-8 h-8 rounded-full bg-indigo-500 flex justify-center items-center text-white">
+                                    <HiOutlineUserGroup size={18} />
                                 </div>
                             ) : getProfilePhotoUrl(activeUser) ? (
-                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#0084ff]">
+                                <div className="w-8 h-8 rounded-full overflow-hidden border border-[#0084ff]">
                                     <Image
                                         src={getProfilePhotoUrl(activeUser)}
                                         alt={activeUser}
-                                        width={40}
-                                        height={40}
+                                        width={32}
+                                        height={32}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
                             ) : (
-                                <div className="w-10 h-10 rounded-full bg-[#0084ff] flex justify-center items-center text-white font-semibold">
+                                <div className="w-8 h-8 rounded-full bg-[#0084ff] flex justify-center items-center text-white text-sm font-semibold">
                                     {activeUser.slice(0, 1).toUpperCase()}
                                 </div>
                             )}
                             {activeChatType === 'individual' && onlineStatus?.[activeUser]?.online && (
-                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></div>
                             )}
                         </div>
                         <div>
-                            <h2 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                            <h2 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                 {activeChatType === 'group' ?
                                     groups?.find(g => g.id === activeUser)?.name || activeUser.split('_')[0]
                                     : activeUser
                                 }
                             </h2>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                                 {activeChatType === 'individual' && onlineStatus?.[activeUser]?.online ? (
                                     <>
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
                                         <p className="text-xs text-green-600 font-medium">Online</p>
                                     </>
                                 ) : (
@@ -167,54 +165,54 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                         </div>
                     </div>
 
-                    <div className={`flex items-center gap-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <div className={`flex items-center gap-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         {activeChatType === 'individual' && (
                             <button
                                 onClick={onStartVoiceCall}
-                                className={`p-2 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+                                className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
                                 title="Voice Call"
                             >
-                                <FaPhone size={16} />
+                                <FaPhone size={14} />
                             </button>
                         )}
-                        <FaEllipsisV className={`cursor-pointer ${isDark ? 'hover:text-gray-200' : 'hover:text-gray-800'} transition-colors`} size={16} />
+                        <FaEllipsisV className={`cursor-pointer ${isDark ? 'hover:text-gray-200' : 'hover:text-gray-800'} transition-colors`} size={14} />
                     </div>
                 </div>
             ) : (
-                <div className={`flex items-center justify-between p-4 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-b shadow-sm`}>
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'} flex justify-center items-center`}>
-                            <FaComments className={isDark ? 'text-gray-400' : 'text-gray-500'} size={20} />
+                <div className={`flex items-center justify-between p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-b`}>
+                    <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'} flex justify-center items-center`}>
+                            <FaComments className={isDark ? 'text-gray-400' : 'text-gray-500'} size={16} />
                         </div>
                         <div>
-                            <h2 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Chat App</h2>
+                            <h2 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>Chat App</h2>
                             <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Select a contact to start chatting</p>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className={`flex-1 p-4 overflow-y-auto ${isDark ? 'bg-gray-900' : 'bg-gray-100'} relative`}>
-                <div className="flex flex-col space-y-2 mx-auto">
+            <div className={`flex-1 p-3 overflow-y-auto ${isDark ? 'bg-gray-900' : 'bg-gray-100'} relative`}>
+                <div className="flex flex-col space-y-1 mx-auto">
                     {!activeUser ? (
-                        <div className="text-center mt-20">
-                            <div className={`w-24 h-24 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner`}>
-                                <FaComment className="text-4xl text-gray-400" />
+                        <div className="text-center mt-16">
+                            <div className={`w-16 h-16 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                                <FaComment className="text-2xl text-gray-400" />
                             </div>
-                            <h3 className={`text-xl font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-2`}>Welcome to Chat</h3>
-                            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>Select a contact from the sidebar to start a conversation</p>
+                            <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Welcome to Chat</h3>
+                            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Select a contact from the sidebar to start a conversation</p>
                         </div>
                     ) : chat.length > 0 ? (
                         <MessageList chat={chat} username={username} getProfilePhoto={getProfilePhotoUrl} onOpenMedia={onOpenMedia} activeChatType={activeChatType} />
                     ) : (
-                        <div className="text-center mt-20">
-                            <div className={`w-20 h-20 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner`}>
-                                <FaComment className="text-2xl text-gray-400" />
+                        <div className="text-center mt-16">
+                            <div className={`w-14 h-14 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                                <FaComment className="text-xl text-gray-400" />
                             </div>
-                            <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            <h3 className={`text-md font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                                 {activeChatType === 'group' ? 'Group created!' : 'Say hello!'}
                             </h3>
-                            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>
+                            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {activeChatType === 'group'
                                     ? 'Send the first message in this group'
                                     : 'Send your first message to start the conversation'
@@ -227,25 +225,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
             </div>
 
             {activeUser && (
-                <ChatInput
-                    activeUser={activeUser}
-                    uploading={uploading}
-                    fileInputRef={fileInputRef} // Make sure this is passed
-                    onStartRecording={startRecording}
-                    onStopRecording={stopRecording}
-                    onCancelRecording={cancelRecording}
-                    onSendRecording={sendRecording}
-                    isRecording={isRecording}
-                    recordingComplete={recordingComplete}
-                    duration={duration}
-                    audioBlob={audioBlob}
-                    onSendMessage={sendMessage}
-                    message={message}
-                    setMessage={setMessage}
-                    onKeyDown={handleKeyDown}
-                    activeChatType={activeChatType}
-                    onFileTypeSelect={onPaperClipClick} // This can be kept for any additional logic
-                />
+                <ChatInput activeUser={activeUser} uploading={uploading} fileInputRef={fileInputRef} onStartRecording={startRecording} onStopRecording={stopRecording} onCancelRecording={cancelRecording} onSendRecording={sendRecording} isRecording={isRecording} recordingComplete={recordingComplete} duration={duration} audioBlob={audioBlob} onSendMessage={sendMessage} message={message} setMessage={setMessage} onKeyDown={handleKeyDown} activeChatType={activeChatType} onFileTypeSelect={onPaperClipClick} />
             )}
         </>
     );

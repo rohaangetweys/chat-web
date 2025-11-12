@@ -21,66 +21,66 @@ export default function AppHeader({ user, username, handleLogout }) {
     }, []);
 
     return (
-        <header className={`px-6 border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} w-full h-20 rounded-3xl flex items-center justify-between mb-3`}>
+        <header className={`px-4 border ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} w-full h-16 rounded-b-xl flex items-center justify-between mb-2`}>
 
-            <div className="flex items-center gap-3">
-                <div className="bg-[#0084ff] text-white px-6 h-10 rounded-xl flex items-center justify-center text-xl font-semibold">
-                    <h1 className="text-2xl font-bold tracking-wide">Chat App</h1>
+            <div className="flex items-center gap-2">
+                <div className="bg-[#0084ff] text-white px-4 h-8 rounded-lg flex items-center justify-center">
+                    <h1 className="text-xl font-bold tracking-wide">Chat App</h1>
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
                 <button
                     onClick={toggleTheme}
-                    className={`p-2 rounded-full transition-colors ${isDark
-                            ? 'text-yellow-400 hover:bg-gray-700'
-                            : 'text-gray-600 hover:bg-gray-200'
+                    className={`p-1.5 rounded-full transition-colors ${isDark
+                        ? 'text-yellow-400 hover:bg-gray-700'
+                        : 'text-gray-600 hover:bg-gray-200'
                         }`}
                     title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
                     {isDark ? (
-                        <MdLightMode className="text-[26px]" />
+                        <MdLightMode className="text-[20px]" />
                     ) : (
-                        <MdDarkMode className="text-[26px]" />
+                        <MdDarkMode className="text-[20px]" />
                     )}
                 </button>
 
                 <div className="relative" ref={profileDropdownRef}>
                     <button
                         onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                        className={`p-2 rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
-                            } transition-colors flex items-center gap-2`}
+                        className={`p-1.5 rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                            } transition-colors flex items-center gap-1.5`}
                     >
                         {user?.photoURL ? (
-                            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#0084ff]">
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-[#0084ff]">
                                 <Image
                                     src={user.photoURL}
                                     alt="Profile"
-                                    width={32}
-                                    height={32}
+                                    width={28}
+                                    height={28}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
                         ) : (
-                            <FaUserCircle className="text-[#0084ff] text-[26px]" />
+                            <FaUserCircle className="text-[#0084ff] text-[20px]" />
                         )}
-                        <span className="text-sm font-medium hidden md:block">{username}</span>
+                        <span className="text-xs font-medium hidden md:block">{username}</span>
                     </button>
 
                     {showProfileDropdown && (
-                        <div className={`absolute right-0 mt-2 w-48 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                        <div className={`absolute right-0 mt-1 w-40 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
                             } rounded-md shadow-lg py-1 z-50 border`}>
-                            <div className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300 border-gray-600' : 'text-gray-700 border-gray-100'
+                            <div className={`px-3 py-1.5 text-xs ${isDark ? 'text-gray-300 border-gray-600' : 'text-gray-700 border-gray-100'
                                 } border-b`}>
                                 <p className="font-medium">Hello, {username}</p>
                                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className={`flex items-center w-full px-4 py-2 text-sm ${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                                className={`flex items-center w-full px-3 py-1.5 text-xs ${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                                     } transition-colors`}
                             >
-                                <FaSignOutAlt className="mr-2 text-gray-500" />
+                                <FaSignOutAlt className="mr-1.5 text-gray-500 text-xs" />
                                 Logout
                             </button>
                         </div>

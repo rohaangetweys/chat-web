@@ -97,44 +97,43 @@ export default function ChatInput({
         }
     ];
 
-    // Show voice recorder UI when recording or when recording is complete
     if (isRecording || recordingComplete) {
         return (
-            <div className={`p-4 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-t shadow-sm`}>
+            <div className={`p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-t`}>
                 <div className="flex items-center justify-between w-full">
                     {/* Cancel Button */}
                     <button
                         onClick={onCancelRecording}
-                        className={`p-3 rounded-full transition-all ${isDark
-                                ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
-                                : 'text-gray-600 hover:text-red-500 hover:bg-gray-100'
+                        className={`p-2 rounded-full transition-all ${isDark
+                            ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
+                            : 'text-gray-600 hover:text-red-500 hover:bg-gray-100'
                             }`}
                     >
-                        <FaTimes size={20} />
+                        <FaTimes size={16} />
                     </button>
 
                     {/* Recording Info */}
-                    <div className="flex-1 flex flex-col items-center mx-4">
+                    <div className="flex-1 flex flex-col items-center mx-3">
                         {isRecording ? (
                             <>
-                                <div className="flex items-center gap-3 mb-1">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                                    <span className={`text-lg font-semibold ${isDark ? 'text-red-400' : 'text-red-500'}`}>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                    <span className={`text-md font-semibold ${isDark ? 'text-red-400' : 'text-red-500'}`}>
                                         {formatTime(duration)}
                                     </span>
                                 </div>
-                                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                     Recording... Tap to stop
                                 </p>
                             </>
                         ) : (
                             <>
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className={`text-lg font-semibold ${isDark ? 'text-green-400' : 'text-green-500'}`}>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <span className={`text-md font-semibold ${isDark ? 'text-green-400' : 'text-green-500'}`}>
                                         {formatTime(duration)}
                                     </span>
                                 </div>
-                                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                     Tap to send
                                 </p>
                             </>
@@ -145,26 +144,26 @@ export default function ChatInput({
                     {isRecording ? (
                         <button
                             onClick={onStopRecording}
-                            className="p-4 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                            className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                         >
-                            <FaStop size={18} />
+                            <FaStop size={14} />
                         </button>
                     ) : (
                         <button
                             onClick={onSendRecording}
-                            className="p-4 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors shadow-lg"
+                            className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
                         >
-                            <FaPaperPlane size={16} />
+                            <FaPaperPlane size={12} />
                         </button>
                     )}
                 </div>
 
                 {/* Audio Preview */}
                 {recordingComplete && audioBlob && (
-                    <div className="mt-4 flex justify-center">
+                    <div className="mt-3 flex justify-center">
                         <audio
                             controls
-                            className={`w-full max-w-md rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'
+                            className={`w-full max-w-xs rounded ${isDark ? 'bg-gray-700' : 'bg-gray-100'
                                 }`}
                         >
                             <source src={URL.createObjectURL(audioBlob)} type="audio/webm" />
@@ -176,57 +175,56 @@ export default function ChatInput({
         );
     }
 
-    // Normal chat input UI
     return (
-        <div className={`p-4 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-t shadow-sm flex items-center`}>
-            <div className="flex items-center gap-2 w-full">
+        <div className={`p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-t flex items-center`}>
+            <div className="flex items-center gap-1 w-full">
                 {/* Paperclip Button with Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={handlePaperClipClick}
                         disabled={!activeUser || uploading}
-                        className={`p-3 rounded-full transition-all ${!activeUser || uploading
-                                ? 'text-gray-400 cursor-not-allowed'
-                                : isDark
-                                    ? `text-gray-400 hover:text-[#0084ff] hover:bg-gray-700 ${showFileDropdown ? 'bg-gray-700 text-[#0084ff]' : ''}`
-                                    : `text-gray-600 hover:text-[#0084ff] hover:bg-gray-100 ${showFileDropdown ? 'bg-gray-100 text-[#0084ff]' : ''}`
+                        className={`p-2 rounded-full transition-all ${!activeUser || uploading
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : isDark
+                                ? `text-gray-400 hover:text-[#0084ff] hover:bg-gray-700 ${showFileDropdown ? 'bg-gray-700 text-[#0084ff]' : ''}`
+                                : `text-gray-600 hover:text-[#0084ff] hover:bg-gray-100 ${showFileDropdown ? 'bg-gray-100 text-[#0084ff]' : ''}`
                             }`}
                         title="Upload file"
                     >
-                        <GoPaperclip size={20} />
+                        <GoPaperclip size={16} />
                     </button>
 
                     {/* File Type Dropdown */}
                     {showFileDropdown && (
-                        <div className={`absolute bottom-full left-0 mb-2 w-64 rounded-xl shadow-2xl z-50 ${isDark ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
+                        <div className={`absolute bottom-full left-0 mb-1 w-56 rounded-lg shadow-lg z-50 ${isDark ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
                             }`}>
                             {/* Dropdown Header */}
-                            <div className={`p-4 border-b ${isDark ? 'border-gray-600' : 'border-gray-200'
+                            <div className={`p-3 border-b ${isDark ? 'border-gray-600' : 'border-gray-200'
                                 }`}>
-                                <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                     Choose File Type
                                 </h3>
                             </div>
 
                             {/* Dropdown Options */}
-                            <div className="p-2 space-y-1">
+                            <div className="p-1 space-y-0.5">
                                 {fileOptions.map((option) => {
                                     const IconComponent = option.icon;
                                     return (
                                         <button
                                             key={option.type}
                                             onClick={() => handleFileTypeSelect(option.type)}
-                                            className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isDark
-                                                    ? 'hover:bg-gray-700 text-gray-200'
-                                                    : 'hover:bg-gray-50 text-gray-700'
+                                            className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors text-left ${isDark
+                                                ? 'hover:bg-gray-700 text-gray-200'
+                                                : 'hover:bg-gray-50 text-gray-700'
                                                 }`}
                                         >
-                                            <div className={`p-2 rounded-full ${isDark ? 'bg-gray-600' : 'bg-gray-100'
+                                            <div className={`p-1.5 rounded-full ${isDark ? 'bg-gray-600' : 'bg-gray-100'
                                                 }`}>
-                                                <IconComponent className={`${option.color}`} size={18} />
+                                                <IconComponent className={`${option.color}`} size={14} />
                                             </div>
                                             <div className="flex-1">
-                                                <p className="font-medium text-sm">{option.label}</p>
+                                                <p className="font-medium text-xs">{option.label}</p>
                                                 <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'
                                                     }`}>
                                                     {option.description}
@@ -238,13 +236,13 @@ export default function ChatInput({
                             </div>
 
                             {/* Dropdown Footer */}
-                            <div className={`p-2 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'
+                            <div className={`p-1 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'
                                 }`}>
                                 <button
                                     onClick={() => setShowFileDropdown(false)}
-                                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${isDark
-                                            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    className={`w-full py-1.5 px-3 rounded-md text-xs font-medium ${isDark
+                                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         } transition-colors`}
                                 >
                                     Cancel
@@ -258,15 +256,15 @@ export default function ChatInput({
                 <button
                     onClick={onStartRecording}
                     disabled={!activeUser || uploading}
-                    className={`p-3 rounded-full transition-all ${!activeUser || uploading
-                            ? 'text-gray-400 cursor-not-allowed'
-                            : isDark
-                                ? 'text-gray-400 hover:text-[#0084ff] hover:bg-gray-700'
-                                : 'text-gray-600 hover:text-[#0084ff] hover:bg-gray-100'
+                    className={`p-2 rounded-full transition-all ${!activeUser || uploading
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : isDark
+                            ? 'text-gray-400 hover:text-[#0084ff] hover:bg-gray-700'
+                            : 'text-gray-600 hover:text-[#0084ff] hover:bg-gray-100'
                         }`}
                     title="Record voice message"
                 >
-                    <FaMicrophone size={18} />
+                    <FaMicrophone size={14} />
                 </button>
 
                 {/* Message Input */}
@@ -283,10 +281,10 @@ export default function ChatInput({
                                 )
                                 : 'Select a contact to start chatting'
                         }
-                        className={`w-full p-3 px-4 rounded-full ${isDark
-                                ? 'bg-gray-700 text-white placeholder-gray-400 focus:ring-[#0084ff]'
-                                : 'bg-gray-100 text-gray-800 placeholder-gray-500 focus:ring-[#0084ff]'
-                            } focus:outline-none focus:ring-2 border-none shadow-inner`}
+                        className={`w-full p-2 px-3 text-sm rounded-full ${isDark
+                            ? 'bg-gray-700 text-white placeholder-gray-400 focus:ring-[#0084ff]'
+                            : 'bg-gray-100 text-gray-800 placeholder-gray-500 focus:ring-[#0084ff]'
+                            } focus:outline-none focus:ring-1 border-none`}
                         onKeyDown={onKeyDown}
                         disabled={!activeUser || uploading}
                     />
@@ -296,14 +294,14 @@ export default function ChatInput({
                 <button
                     onClick={onSendMessage}
                     disabled={!activeUser || uploading || !message.trim()}
-                    className={`p-3 rounded-full transition-all ${!activeUser || uploading || !message.trim()
-                            ? isDark
-                                ? 'text-gray-600 cursor-not-allowed bg-gray-700'
-                                : 'text-gray-400 cursor-not-allowed bg-gray-100'
-                            : 'text-white bg-[#0084ff] hover:bg-[#00b884] shadow-md'
+                    className={`p-2 rounded-full transition-all ${!activeUser || uploading || !message.trim()
+                        ? isDark
+                            ? 'text-gray-600 cursor-not-allowed bg-gray-700'
+                            : 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-white bg-[#0084ff] hover:bg-[#00b884]'
                         }`}
                 >
-                    <FaPaperPlane size={16} />
+                    <FaPaperPlane size={12} />
                 </button>
             </div>
         </div>
