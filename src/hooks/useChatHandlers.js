@@ -39,7 +39,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         return () => window.removeEventListener('resize', checkMobile);
     }, [activeUser, setShowSidebar]);
 
-    // Listen for incoming calls
+    // Listen for incoming calls and call responses
     useEffect(() => {
         if (!username) return;
 
@@ -47,20 +47,64 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         const unsub = onValue(callsRef, (snapshot) => {
             if (snapshot.exists()) {
                 const callData = snapshot.val();
-                if (callData.status === 'ringing' && !callState.isActiveCall && !callState.isOutgoingCall) {
+                console.log('Call data received:', callData);
+
+                // Handle incoming call
+                if (callData.status === 'ringing' && callData.from !== username && !callState.isActiveCall && !callState.isOutgoingCall) {
                     setCallState({
                         isIncomingCall: true,
                         isOutgoingCall: false,
                         isActiveCall: false,
                         callWith: callData.from,
-                        callType: callData.type || 'audio'
+                        callType: callData.type || 'audio',
+                        callId: callData.callId
                     });
+                }
+
+                // Handle call accepted (for outgoing calls)
+                if (callData.status === 'accepted' && callState.isOutgoingCall && callState.callWith === callData.to) {
+                    setCallState(prev => ({
+                        ...prev,
+                        isIncomingCall: false,
+                        isOutgoingCall: false,
+                        isActiveCall: true
+                    }));
+                    toast.success('Call accepted!');
+                }
+
+                // Handle call rejected (for outgoing calls)
+                if (callData.status === 'rejected' && callState.isOutgoingCall && callState.callWith === callData.to) {
+                    setCallState({
+                        isIncomingCall: false,
+                        isOutgoingCall: false,
+                        isActiveCall: false,
+                        callWith: null,
+                        callType: 'audio',
+                        callId: null
+                    });
+                    toast.error('Call rejected');
+                }
+
+                // Handle call ended
+                if (callData.status === 'ended' && (callState.isActiveCall || callState.isOutgoingCall || callState.isIncomingCall)) {
+                    setCallState({
+                        isIncomingCall: false,
+                        isOutgoingCall: false,
+                        isActiveCall: false,
+                        callWith: null,
+                        callType: 'audio',
+                        callId: null
+                    });
+                    
+                    if (callData.endedBy !== username) {
+                        toast.info('Call ended by other user');
+                    }
                 }
             }
         });
 
         return () => unsub();
-    }, [username, callState.isActiveCall, callState.isOutgoingCall, setCallState]);
+    }, [username, callState, setCallState]);
 
     // Send call invitation
     const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
@@ -72,37 +116,80 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             
             await set(callRef, {
                 from: username,
+                to: toUser,
                 type: type,
                 status: 'ringing',
                 callId: callId,
                 timestamp: Date.now()
             });
 
-            // Set timeout to auto-reject if not answered
-            setTimeout(async () => {
-                const currentCallRef = ref(db, `calls/${toUser}`);
-                const snapshot = await get(currentCallRef);
-                if (snapshot.exists() && snapshot.val().status === 'ringing') {
-                    await remove(currentCallRef);
-                    if (callState.isOutgoingCall) {
-                        setCallState(prev => ({ ...prev, isOutgoingCall: false }));
-                        toast.error('Call not answered');
-                    }
-                }
-            }, 30000); // 30 seconds timeout
+            // Also set the call state for the caller
+            setCallState(prev => ({
+                ...prev,
+                callId: callId
+            }));
+
+            console.log('Call invitation sent to:', toUser);
 
         } catch (error) {
             console.error('Error sending call invitation:', error);
             toast.error('Failed to start call');
         }
-    }, [username, callState.isOutgoingCall, setCallState]);
+    }, [username, setCallState]);
 
     // Update call state when outgoing call starts
     useEffect(() => {
-        if (callState.isOutgoingCall && callState.callWith) {
+        if (callState.isOutgoingCall && callState.callWith && !callState.callId) {
             sendCallInvitation(callState.callWith, callState.callType);
         }
-    }, [callState.isOutgoingCall, callState.callWith, callState.callType, sendCallInvitation]);
+    }, [callState.isOutgoingCall, callState.callWith, callState.callType, callState.callId, sendCallInvitation]);
+
+    // Send call response (accept/reject)
+    const sendCallResponse = useCallback(async (toUser, response, callId) => {
+        if (!username || !toUser || !callId) return;
+
+        try {
+            const callRef = ref(db, `calls/${toUser}`);
+            await set(callRef, {
+                from: username, // The one who is responding
+                to: toUser,     // The original caller
+                status: response,
+                callId: callId,
+                timestamp: Date.now()
+            });
+
+            console.log(`Call ${response} sent to:`, toUser);
+        } catch (error) {
+            console.error('Error sending call response:', error);
+            toast.error('Failed to send call response');
+        }
+    }, [username]);
+
+    // End call for both users
+    const endCallForBoth = useCallback(async (callWith, callId) => {
+        if (!username || !callWith || !callId) return;
+
+        try {
+            // End call for the other user
+            const otherUserCallRef = ref(db, `calls/${callWith}`);
+            await set(otherUserCallRef, {
+                from: username,
+                to: callWith,
+                status: 'ended',
+                callId: callId,
+                endedBy: username,
+                timestamp: Date.now()
+            });
+
+            // End call for current user
+            const currentUserCallRef = ref(db, `calls/${username}`);
+            await remove(currentUserCallRef);
+
+            console.log('Call ended for both users');
+        } catch (error) {
+            console.error('Error ending call:', error);
+        }
+    }, [username]);
 
     useEffect(() => {
         if (!username) return;
@@ -652,5 +739,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         unblockUser,
         blockedUsers,
         clearChat,
+        sendCallResponse,
+        endCallForBoth
     };
 }

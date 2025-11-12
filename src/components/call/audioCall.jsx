@@ -12,7 +12,7 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
     const [callDuration, setCallDuration] = useState(0);
     const [peerConnection, setPeerConnection] = useState(null);
-
+    
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
     const durationIntervalRef = useRef(null);
@@ -32,32 +32,48 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
             startCallTimer();
         }
 
+        // Auto-reject timeout for incoming calls
+        if (callState.isIncomingCall) {
+            const timeout = setTimeout(() => {
+                if (callState.isIncomingCall) {
+                    handleRejectCall();
+                }
+            }, 30000); // 30 seconds timeout
+
+            return () => clearTimeout(timeout);
+        }
+
+        // Auto-cancel timeout for outgoing calls
+        if (callState.isOutgoingCall) {
+            const timeout = setTimeout(() => {
+                if (callState.isOutgoingCall) {
+                    handleEndCall();
+                }
+            }, 30000); // 30 seconds timeout
+
+            return () => clearTimeout(timeout);
+        }
+
         return () => {
             if (durationIntervalRef.current) {
                 clearInterval(durationIntervalRef.current);
             }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            if (peerConnection) {
-                peerConnection.close();
-            }
         };
-    }, [callState.isActiveCall]);
+    }, [callState.isActiveCall, callState.isIncomingCall, callState.isOutgoingCall]);
 
     const initializeCall = async () => {
         try {
             // Get user media
-            const stream = await navigator.mediaDevices.getUserMedia({
+            const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true
-                }
+                } 
             });
-
+            
             setLocalStream(stream);
-
+            
             if (localAudioRef.current) {
                 localAudioRef.current.srcObject = stream;
             }
@@ -122,11 +138,22 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
     };
 
     const handleEndCall = async () => {
-        // Clean up call from Firebase
-        if (callState.callWith) {
+        // Clean up call from Firebase for both users
+        if (callState.callWith && callState.callId) {
             const callRef = ref(db, `calls/${callState.callWith}`);
-            await remove(callRef);
+            await set(callRef, {
+                from: username,
+                to: callState.callWith,
+                status: 'ended',
+                callId: callState.callId,
+                endedBy: username,
+                timestamp: Date.now()
+            });
         }
+
+        // Clean up current user's call data
+        const currentUserCallRef = ref(db, `calls/${username}`);
+        await remove(currentUserCallRef);
 
         if (localStream) {
             localStream.getTracks().forEach(track => track.stop());
@@ -160,25 +187,60 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
     };
 
     const handleAcceptCall = async () => {
-        // Remove the call invitation from Firebase
-        if (callState.callWith) {
-            const callRef = ref(db, `calls/${username}`);
-            await remove(callRef);
+        // Send acceptance to the caller
+        if (callState.callWith && callState.callId) {
+            const callRef = ref(db, `calls/${callState.callWith}`);
+            await set(callRef, {
+                from: username,
+                to: callState.callWith,
+                status: 'accepted',
+                callId: callState.callId,
+                timestamp: Date.now()
+            });
         }
+
+        // Remove the call invitation from current user
+        const currentUserCallRef = ref(db, `calls/${username}`);
+        await remove(currentUserCallRef);
+
         onCallAccept();
     };
 
     const handleRejectCall = async () => {
-        // Remove the call invitation from Firebase
-        if (callState.callWith) {
-            const callRef = ref(db, `calls/${username}`);
-            await remove(callRef);
+        // Send rejection to the caller
+        if (callState.callWith && callState.callId) {
+            const callRef = ref(db, `calls/${callState.callWith}`);
+            await set(callRef, {
+                from: username,
+                to: callState.callWith,
+                status: 'rejected',
+                callId: callState.callId,
+                timestamp: Date.now()
+            });
         }
+
+        // Remove the call invitation from current user
+        const currentUserCallRef = ref(db, `calls/${username}`);
+        await remove(currentUserCallRef);
+
         onCallReject();
     };
 
     const getProfilePhoto = (username) => {
         return userProfiles?.[username]?.profilePhoto || null;
+    };
+
+    const getCallStatusText = () => {
+        if (callState.isIncomingCall && !callState.isActiveCall) {
+            return 'Incoming audio call...';
+        }
+        if (callState.isOutgoingCall && !callState.isActiveCall) {
+            return 'Calling...';
+        }
+        if (callState.isActiveCall) {
+            return `Call duration: ${formatDuration(callDuration)}`;
+        }
+        return '';
     };
 
     return (
@@ -199,50 +261,52 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                             </div>
                         )}
                     </div>
-
+                    
                     <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'} mb-2`}>
                         {callState.callWith}
                     </h2>
-
+                    
                     <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        {callState.isIncomingCall && !callState.isActiveCall && 'Incoming audio call...'}
-                        {callState.isOutgoingCall && !callState.isActiveCall && 'Calling...'}
-                        {callState.isActiveCall && `Call duration: ${formatDuration(callDuration)}`}
+                        {getCallStatusText()}
                     </p>
                 </div>
 
-                {/* Call Controls */}
-                <div className="flex justify-center space-x-6 mb-6">
-                    {/* Mute/Unmute Button */}
-                    <button
-                        onClick={toggleMute}
-                        className={`p-4 rounded-full ${isMuted
-                                ? 'bg-red-500 hover:bg-red-600'
-                                : 'bg-gray-600 hover:bg-gray-700'
+                {/* Call Controls - Only show during active call */}
+                {(callState.isActiveCall) && (
+                    <div className="flex justify-center space-x-6 mb-6">
+                        {/* Mute/Unmute Button */}
+                        <button
+                            onClick={toggleMute}
+                            className={`p-4 rounded-full ${
+                                isMuted 
+                                    ? 'bg-red-500 hover:bg-red-600' 
+                                    : 'bg-gray-600 hover:bg-gray-700'
                             } transition-colors`}
-                    >
-                        {isMuted ? (
-                            <FaMicrophoneSlash className="text-white text-xl" />
-                        ) : (
-                            <FaMicrophone className="text-white text-xl" />
-                        )}
-                    </button>
+                        >
+                            {isMuted ? (
+                                <FaMicrophoneSlash className="text-white text-xl" />
+                            ) : (
+                                <FaMicrophone className="text-white text-xl" />
+                            )}
+                        </button>
 
-                    {/* Speaker Button */}
-                    <button
-                        onClick={toggleSpeaker}
-                        className={`p-4 rounded-full ${!isSpeakerOn
-                                ? 'bg-yellow-500 hover:bg-yellow-600'
-                                : 'bg-gray-600 hover:bg-gray-700'
+                        {/* Speaker Button */}
+                        <button
+                            onClick={toggleSpeaker}
+                            className={`p-4 rounded-full ${
+                                !isSpeakerOn 
+                                    ? 'bg-yellow-500 hover:bg-yellow-600' 
+                                    : 'bg-gray-600 hover:bg-gray-700'
                             } transition-colors`}
-                    >
-                        {isSpeakerOn ? (
-                            <FaVolumeUp className="text-white text-xl" />
-                        ) : (
-                            <FaVolumeMute className="text-white text-xl" />
-                        )}
-                    </button>
-                </div>
+                        >
+                            {isSpeakerOn ? (
+                                <FaVolumeUp className="text-white text-xl" />
+                            ) : (
+                                <FaVolumeMute className="text-white text-xl" />
+                            )}
+                        </button>
+                    </div>
+                )}
 
                 {/* Call Action Buttons */}
                 <div className="flex justify-center space-x-6">
@@ -255,7 +319,7 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                             >
                                 <FaPhone className="text-white text-xl" />
                             </button>
-
+                            
                             {/* Reject Call */}
                             <button
                                 onClick={handleRejectCall}
@@ -277,10 +341,10 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
 
                 {/* Hidden audio elements */}
                 <audio ref={localAudioRef} muted className="hidden" />
-                <audio
-                    ref={remoteAudioRef}
-                    autoPlay
-                    className="hidden"
+                <audio 
+                    ref={remoteAudioRef} 
+                    autoPlay 
+                    className="hidden" 
                     muted={!isSpeakerOn}
                 />
             </div>

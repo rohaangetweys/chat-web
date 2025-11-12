@@ -22,13 +22,13 @@ export default function ChatInput({
     setMessage,
     onKeyDown,
     activeChatType,
-    onFileTypeSelect // This should trigger the file input
+    onFileTypeSelect
 }) {
     const { isDark } = useTheme();
     const [showFileDropdown, setShowFileDropdown] = useState(false);
     const dropdownRef = useRef(null);
 
-    // Close dropdown when clicking outside
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -55,7 +55,6 @@ export default function ChatInput({
 
     const handleFileTypeSelect = (fileType) => {
         setShowFileDropdown(false);
-        // Set the accept attribute based on file type and trigger file input
         const acceptMap = {
             image: 'image/*',
             video: 'video/*',
@@ -67,7 +66,6 @@ export default function ChatInput({
             fileInputRef.current.click();
         }
 
-        // Also call the parent handler if needed
         if (onFileTypeSelect) {
             onFileTypeSelect(fileType);
         }
@@ -101,7 +99,6 @@ export default function ChatInput({
         return (
             <div className={`p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-t`}>
                 <div className="flex items-center justify-between w-full">
-                    {/* Cancel Button */}
                     <button
                         onClick={onCancelRecording}
                         className={`p-2 rounded-full transition-all ${isDark
@@ -112,7 +109,6 @@ export default function ChatInput({
                         <FaTimes size={16} />
                     </button>
 
-                    {/* Recording Info */}
                     <div className="flex-1 flex flex-col items-center mx-3">
                         {isRecording ? (
                             <>
@@ -140,7 +136,6 @@ export default function ChatInput({
                         )}
                     </div>
 
-                    {/* Action Button */}
                     {isRecording ? (
                         <button
                             onClick={onStopRecording}
@@ -158,7 +153,6 @@ export default function ChatInput({
                     )}
                 </div>
 
-                {/* Audio Preview */}
                 {recordingComplete && audioBlob && (
                     <div className="mt-3 flex justify-center">
                         <audio
@@ -178,7 +172,6 @@ export default function ChatInput({
     return (
         <div className={`p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-t flex items-center`}>
             <div className="flex items-center gap-1 w-full">
-                {/* Paperclip Button with Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={handlePaperClipClick}
@@ -194,11 +187,9 @@ export default function ChatInput({
                         <GoPaperclip size={16} />
                     </button>
 
-                    {/* File Type Dropdown */}
                     {showFileDropdown && (
                         <div className={`absolute bottom-full left-0 mb-1 w-56 rounded-lg shadow-lg z-50 ${isDark ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-200'
                             }`}>
-                            {/* Dropdown Header */}
                             <div className={`p-3 border-b ${isDark ? 'border-gray-600' : 'border-gray-200'
                                 }`}>
                                 <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -206,7 +197,6 @@ export default function ChatInput({
                                 </h3>
                             </div>
 
-                            {/* Dropdown Options */}
                             <div className="p-1 space-y-0.5">
                                 {fileOptions.map((option) => {
                                     const IconComponent = option.icon;
@@ -235,7 +225,6 @@ export default function ChatInput({
                                 })}
                             </div>
 
-                            {/* Dropdown Footer */}
                             <div className={`p-1 border-t ${isDark ? 'border-gray-600' : 'border-gray-200'
                                 }`}>
                                 <button
@@ -252,7 +241,6 @@ export default function ChatInput({
                     )}
                 </div>
 
-                {/* Voice Recording Button */}
                 <button
                     onClick={onStartRecording}
                     disabled={!activeUser || uploading}
@@ -267,7 +255,6 @@ export default function ChatInput({
                     <FaMicrophone size={14} />
                 </button>
 
-                {/* Message Input */}
                 <div className="flex-1 relative">
                     <input
                         type="text"
@@ -290,7 +277,6 @@ export default function ChatInput({
                     />
                 </div>
 
-                {/* Send Button */}
                 <button
                     onClick={onSendMessage}
                     disabled={!activeUser || uploading || !message.trim()}

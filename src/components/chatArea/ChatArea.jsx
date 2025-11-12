@@ -69,13 +69,17 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
             mediaRecorderRef.current = new MediaRecorder(stream);
 
             mediaRecorderRef.current.ondataavailable = (event) => {
-                if (event.data.size > 0) audioChunksRef.current.push(event.data);
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
             };
 
             mediaRecorderRef.current.onstop = () => {
                 setRecordingComplete(true);
-                const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-                setAudioBlob(blob);
+                if (audioChunksRef.current.length > 0) {
+                    const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+                    setAudioBlob(blob);
+                }
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -102,14 +106,25 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
         setRecordingComplete(false);
         setAudioBlob(null);
         setDuration(0);
+        audioChunksRef.current = [];
     };
 
     const sendRecording = () => {
-        if (audioBlob) {
-            onSendMessage('', 'audio', audioBlob, duration);
+        let blobToSend = audioBlob;
+
+        if (!blobToSend && audioChunksRef.current.length > 0) {
+            blobToSend = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        }
+
+        if (blobToSend) {
+            onSendMessage('', 'audio', blobToSend, duration);
             setRecordingComplete(false);
             setAudioBlob(null);
             setDuration(0);
+            audioChunksRef.current = [];
+        } else {
+            console.error('No audio data to send');
+            alert('No recording data found');
         }
     };
 

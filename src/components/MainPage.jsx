@@ -4,7 +4,6 @@ import Sidebar from '@/components/sidebar/Sidebar';
 import ChatArea from '@/components/chatArea/ChatArea';
 import AppHeader from '@/components/AppHeader';
 import ModalsManager from '@/components/chatArea/ModalsManager';
-import AudioCall from '@/components/call/audioCall';
 import useAuth from '@/hooks/useAuth';
 import useProfiles from '@/hooks/useProfiles';
 import useGroups from '@/hooks/useGroups';
@@ -12,6 +11,7 @@ import useChatHandlers from '@/hooks/useChatHandlers';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '@/contexts/ThemeContext';
+import AudioCall from './call/audioCall';
 
 export default function ChatPage() {
     const router = useRouter();
@@ -26,7 +26,8 @@ export default function ChatPage() {
         isOutgoingCall: false,
         isActiveCall: false,
         callWith: null,
-        callType: 'audio'
+        callType: 'audio',
+        callId: null
     });
 
     const { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, handlePaperClipClick, handleFileTypeSelect, unreadCounts, setActiveUserHandler, blockUser, unblockUser, blockedUsers, clearChat } = useChatHandlers({ username, users, groups, setShowSidebar, callState, setCallState });
@@ -58,7 +59,8 @@ export default function ChatPage() {
             isOutgoingCall: true,
             isActiveCall: false,
             callWith: activeUser,
-            callType: 'audio'
+            callType: 'audio',
+            callId: null
         });
     };
 
@@ -86,7 +88,8 @@ export default function ChatPage() {
             isOutgoingCall: false,
             isActiveCall: false,
             callWith: null,
-            callType: 'audio'
+            callType: 'audio',
+            callId: null
         });
     };
 
@@ -104,7 +107,8 @@ export default function ChatPage() {
             isOutgoingCall: false,
             isActiveCall: false,
             callWith: null,
-            callType: 'audio'
+            callType: 'audio',
+            callId: null
         });
     };
 
