@@ -2,7 +2,6 @@
 import React from 'react';
 import MediaModal from '@/components/MediaModal';
 import VoiceRecorder from '@/components/VoiceRecorder';
-import FileTypeModal from '@/components/FileTypeModal';
 
 export default function ModalsManager({ modalContent, modalType, showFileTypeModal, setShowFileTypeModal, showVoiceRecorder, setShowVoiceRecorder, onFileTypeSelect, onVoiceComplete, closeMediaModal }) {
     return (
