@@ -39,7 +39,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         return () => window.removeEventListener('resize', checkMobile);
     }, [activeUser, setShowSidebar]);
 
-    // Listen for incoming calls and call responses
     useEffect(() => {
         if (!username) return;
 
@@ -47,9 +46,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         const unsub = onValue(callsRef, (snapshot) => {
             if (snapshot.exists()) {
                 const callData = snapshot.val();
-                console.log('Call data received:', callData);
 
-                // Handle incoming call
                 if (callData.status === 'ringing' && callData.from !== username && !callState.isActiveCall && !callState.isOutgoingCall) {
                     setCallState({
                         isIncomingCall: true,
@@ -61,7 +58,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     });
                 }
 
-                // Handle call accepted (for outgoing calls)
                 if (callData.status === 'accepted' && callState.isOutgoingCall && callState.callWith === callData.to) {
                     setCallState(prev => ({
                         ...prev,
@@ -72,7 +68,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     toast.success('Call accepted!');
                 }
 
-                // Handle call rejected (for outgoing calls)
                 if (callData.status === 'rejected' && callState.isOutgoingCall && callState.callWith === callData.to) {
                     setCallState({
                         isIncomingCall: false,
@@ -85,7 +80,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     toast.error('Call rejected');
                 }
 
-                // Handle call ended
                 if (callData.status === 'ended' && (callState.isActiveCall || callState.isOutgoingCall || callState.isIncomingCall)) {
                     setCallState({
                         isIncomingCall: false,
@@ -106,7 +100,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         return () => unsub();
     }, [username, callState, setCallState]);
 
-    // Send call invitation
     const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
         if (!username || !toUser) return;
 
@@ -123,13 +116,10 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 timestamp: Date.now()
             });
 
-            // Also set the call state for the caller
             setCallState(prev => ({
                 ...prev,
                 callId: callId
             }));
-
-            console.log('Call invitation sent to:', toUser);
 
         } catch (error) {
             console.error('Error sending call invitation:', error);
@@ -137,40 +127,34 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     }, [username, setCallState]);
 
-    // Update call state when outgoing call starts
     useEffect(() => {
         if (callState.isOutgoingCall && callState.callWith && !callState.callId) {
             sendCallInvitation(callState.callWith, callState.callType);
         }
     }, [callState.isOutgoingCall, callState.callWith, callState.callType, callState.callId, sendCallInvitation]);
 
-    // Send call response (accept/reject)
     const sendCallResponse = useCallback(async (toUser, response, callId) => {
         if (!username || !toUser || !callId) return;
 
         try {
             const callRef = ref(db, `calls/${toUser}`);
             await set(callRef, {
-                from: username, // The one who is responding
-                to: toUser,     // The original caller
+                from: username,
+                to: toUser,
                 status: response,
                 callId: callId,
                 timestamp: Date.now()
             });
-
-            console.log(`Call ${response} sent to:`, toUser);
         } catch (error) {
             console.error('Error sending call response:', error);
             toast.error('Failed to send call response');
         }
     }, [username]);
 
-    // End call for both users
     const endCallForBoth = useCallback(async (callWith, callId) => {
         if (!username || !callWith || !callId) return;
 
         try {
-            // End call for the other user
             const otherUserCallRef = ref(db, `calls/${callWith}`);
             await set(otherUserCallRef, {
                 from: username,
@@ -181,11 +165,8 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 timestamp: Date.now()
             });
 
-            // End call for current user
             const currentUserCallRef = ref(db, `calls/${username}`);
             await remove(currentUserCallRef);
-
-            console.log('Call ended for both users');
         } catch (error) {
             console.error('Error ending call:', error);
         }
@@ -248,8 +229,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             chatRef = ref(db, `groupChats/${activeUser}/messages`);
         }
 
-        console.log('Setting up chat listener for:', activeUser, 'Type:', activeChatType);
-
         const unsub = onValue(chatRef, (snapshot) => {
             if (!snapshot.exists()) {
                 setChat([]);
@@ -271,7 +250,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             });
 
             msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            console.log('Received messages after filtering:', msgs.length);
             setChat(msgs);
 
             markMessagesAsRead(activeUser, activeChatType);
@@ -280,15 +258,12 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         });
 
         return () => {
-            console.log('Cleaning up chat listener for:', activeUser);
             unsub();
         };
     }, [activeUser, username, activeChatType, blockedUsers, clearedChats]);
 
     useEffect(() => {
         if (!username) return;
-
-        console.log('Setting up unread counts listeners for users:', users?.length, 'groups:', groups?.length);
 
         const unsubscribeFunctions = [];
 
@@ -338,7 +313,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     msg.username !== username
                 ).length;
 
-                console.log(`Unread for ${user}:`, unread, 'lastRead:', lastRead);
                 setUnreadCounts(prev => ({ ...prev, [user]: unread }));
             }, (error) => {
                 console.error(`Error listening to chat with ${user}:`, error);
@@ -378,16 +352,12 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 const lastReadKey = `lastRead_${username}_${groupId}`;
                 const lastRead = Number(localStorage.getItem(lastReadKey) || 0);
 
-                console.log(`Group ${groupId}: lastRead = ${lastRead}, messages count = ${messages.length}`);
-
                 const unread = messages.filter(msg => {
                     const isUnread = (msg.timestamp || 0) > lastRead;
                     const isFromOthers = msg.username !== username;
-                    console.log(`Message ${msg.id}: ts=${msg.timestamp}, from=${msg.username}, isUnread=${isUnread}, isFromOthers=${isFromOthers}`);
                     return isUnread && isFromOthers;
                 }).length;
 
-                console.log(`Unread for group ${groupId}:`, unread, 'lastRead:', lastRead);
                 setUnreadCounts(prev => ({ ...prev, [groupId]: unread }));
             }, (error) => {
                 console.error(`Error listening to group ${groupId}:`, error);
@@ -397,7 +367,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         });
 
         return () => {
-            console.log('Cleaning up unread count listeners');
             unsubscribeFunctions.forEach(unsub => unsub && unsub());
         };
     }, [users, groups, username, blockedUsers, clearedChats]);
@@ -472,7 +441,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         const lastReadKey = `lastRead_${username}_${target}`;
         const currentTime = Date.now();
 
-        console.log(`Marking messages as read for ${target} (${type}), setting lastRead to:`, currentTime);
         localStorage.setItem(lastReadKey, currentTime.toString());
 
         setUnreadCounts(prev => ({
@@ -509,14 +477,13 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 timestamp: Date.now(),
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             });
-            console.log('File message sent successfully to:', activeUser, 'Type:', activeChatType);
         } catch (err) {
             console.error('sendFileMessage error:', err);
             toast.error('Failed to send file');
         }
     };
 
-    const sendMessage = async (messageText) => {
+    const sendMessage = async (messageText, type = 'text', file = null, duration = 0) => {
         if (!activeUser || !username) return;
 
         if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
@@ -534,17 +501,49 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         try {
             const newMessageRef = push(chatRef);
-            await set(newMessageRef, {
-                username,
-                message: messageText,
-                type: 'text',
-                timestamp: Date.now(),
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            });
-            console.log('Text message sent successfully to:', activeUser, 'Type:', activeChatType);
+            
+            if (type === 'audio' && file) {
+                setUploading(true);
+                try {
+                    toast.loading('Uploading voice message...', { id: 'voice-upload' });
+                    const audioFile = new File([file], `voice-message-${Date.now()}.webm`, { type: 'audio/webm' });
+                    const data = await uploadToCloudinary(audioFile);
+                    
+                    await set(newMessageRef, {
+                        username,
+                        message: data.secure_url,
+                        type: 'audio',
+                        fileName: 'Voice Message',
+                        format: 'webm',
+                        duration: duration,
+                        timestamp: Date.now(),
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    
+                    toast.success('Voice message sent!', { id: 'voice-upload' });
+                } catch (error) {
+                    console.error('Voice message upload error:', error);
+                    toast.error('Failed to send voice message', { id: 'voice-upload' });
+                    throw error;
+                } finally {
+                    setUploading(false);
+                }
+            } else {
+                await set(newMessageRef, {
+                    username,
+                    message: messageText,
+                    type: 'text',
+                    timestamp: Date.now(),
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+            }
         } catch (err) {
             console.error('sendMessage error:', err);
-            toast.error('Failed to send message');
+            if (type === 'audio') {
+                toast.error('Failed to send voice message');
+            } else {
+                toast.error('Failed to send message');
+            }
         }
     };
 
@@ -621,19 +620,10 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             return;
         }
 
-        setUploading(true);
         try {
-            toast.loading('Uploading voice message...', { id: 'voice-upload' });
-            const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, { type: 'audio/webm' });
-            const data = await uploadToCloudinary(audioFile);
-            await sendFileMessage({ url: data.secure_url, type: 'audio', fileName: 'Voice Message', format: 'webm', duration });
-            toast.success('Voice message sent!', { id: 'voice-upload' });
-            setShowVoiceRecorder(false);
+            await sendMessage('Voice message', 'audio', audioBlob, duration);
         } catch (error) {
-            console.error('Voice message upload error:', error);
-            toast.error('Failed to send voice message', { id: 'voice-upload' });
-        } finally {
-            setUploading(false);
+            console.error('Voice message error:', error);
         }
     };
 
