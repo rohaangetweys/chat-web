@@ -8,7 +8,7 @@ import GroupModal from './GroupModal';
 import { formatLastMessageTime, getLastMessagePreview, getAvailableUsers, getProfilePhoto, toggleUserSelection, filterUsersByQuery, filterGroupsByQuery, prepareContacts, filterContacts } from '../../utils/sidebar';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles, onlineStatus }) {
+export default function Sidebar({ username, users, groups, setUsers, activeUser, setActiveUser, activeChatType, setActiveChatType, onCreateGroup, unreadCounts, userProfiles, onlineStatus, blockedUsers, onBlockUser, onUnblockUser }) {
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [groupName, setGroupName] = useState('');
     const [selectedUsers, setSelectedUsers] = useState([]);
@@ -150,7 +150,14 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
     }, [groups, username]);
 
     useEffect(() => {
-        const allContacts = prepareContacts(availableUsers, groups, lastMessages, unreadCounts, onlineStatus);
+        const allContacts = prepareContacts(
+            availableUsers,
+            groups,
+            lastMessages,
+            unreadCounts,
+            onlineStatus
+        );
+
         setSortedContacts(allContacts);
     }, [availableUsers, groups, lastMessages, unreadCounts, onlineStatus]);
 
@@ -166,23 +173,24 @@ export default function Sidebar({ username, users, groups, setUsers, activeUser,
 
     const filteredContacts = useMemo(() => {
         return filterContacts(
-            sortedContacts, 
-            activeFilter, 
-            searchQuery, 
-            filteredUsers, 
-            filteredGroups, 
-            lastMessages, 
-            unreadCounts, 
-            onlineStatus
+            sortedContacts,
+            activeFilter,
+            searchQuery,
+            filteredUsers,
+            filteredGroups,
+            lastMessages,
+            unreadCounts,
+            onlineStatus,
+            blockedUsers
         );
-    }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus]);
+    }, [sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus, blockedUsers]);
 
     return (
         <>
             <div className={`w-full h-full ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border-r flex flex-col shadow-lg`}>
-                <SidebarHeader username={username} getProfilePhoto={(username) => getProfilePhoto(username, userProfiles)} searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} />
+                <SidebarHeader username={username} getProfilePhoto={(username) => getProfilePhoto(username, userProfiles)} searchQuery={searchQuery} onSearchChange={handleSearchChange} clearSearch={clearSearch} openGroupModal={openGroupModal} activeFilter={activeFilter} setActiveFilter={setActiveFilter} sortedContacts={sortedContacts} blockedUsers={blockedUsers} />
                 <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-                    <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={(username) => getProfilePhoto(username, userProfiles)} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} />
+                    <ContactList contacts={filteredContacts} activeUser={activeUser} activeChatType={activeChatType} handleUserClick={handleUserClick} handleGroupClick={handleGroupClick} getProfilePhoto={(username) => getProfilePhoto(username, userProfiles)} getLastMessagePreview={(id) => getLastMessagePreview(id, lastMessages, groups)} formatLastMessageTime={(ts) => formatLastMessageTime(ts)} blockedUsers={blockedUsers} onBlockUser={onBlockUser} onUnblockUser={onUnblockUser} />
                 </div>
             </div>
 

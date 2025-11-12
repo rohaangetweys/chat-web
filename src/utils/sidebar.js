@@ -23,10 +23,10 @@ export function formatLastMessageTime(timestamp) {
     }
 }
 
-export function getLastMessagePreview(targetId, lastMessages, groups) {
+export function getLastMessagePreview(targetId, lastMessages, groups, blockedUsers = []) {
+    if (blockedUsers.includes(targetId)) return 'User is blocked';
     const lastMessage = lastMessages[targetId];
     if (!lastMessage) return 'No messages yet';
-
     let messageContent = '';
     switch (lastMessage.type) {
         case 'image':
@@ -44,17 +44,15 @@ export function getLastMessagePreview(targetId, lastMessages, groups) {
         default:
             messageContent = lastMessage.message || 'Message';
     }
-
     const isGroup = groups.some(g => g.id === targetId);
     if (isGroup && lastMessage.username) {
         return `${lastMessage.username}: ${messageContent}`;
     }
-
     return messageContent;
 }
 
-export function getAvailableUsers(users, username) {
-    return users.filter(u => u !== username);
+export function getAvailableUsers(users, username, blockedUsers = []) {
+    return users.filter(u => u !== username && !blockedUsers.includes(u));
 }
 
 export function getProfilePhoto(username, userProfiles) {
@@ -71,12 +69,12 @@ export function toggleUserSelection(selectedUsers, user) {
         : [...selectedUsers, user];
 }
 
-export function filterUsersByQuery(users, searchQuery) {
+export function filterUsersByQuery(users, searchQuery, blockedUsers = []) {
     if (searchQuery.trim() === '') {
-        return users;
+        return users.filter(u => !blockedUsers.includes(u));
     }
     const q = searchQuery.toLowerCase();
-    return users.filter(user => user.toLowerCase().includes(q));
+    return users.filter(user => user.toLowerCase().includes(q) && !blockedUsers.includes(user));
 }
 
 export function filterGroupsByQuery(groups, searchQuery) {
@@ -87,25 +85,27 @@ export function filterGroupsByQuery(groups, searchQuery) {
     return groups.filter(group => group.name.toLowerCase().includes(q));
 }
 
-export function prepareContacts(availableUsers, groups, lastMessages, unreadCounts, onlineStatus) {
+export function prepareContacts(availableUsers, groups, lastMessages, unreadCounts, onlineStatus, blockedUsers = []) {
     const allContacts = [];
 
-    availableUsers.forEach(user => {
-        const lastMessage = lastMessages[user];
-        const timestamp = lastMessage?.timestamp || 0;
-        const unreadCount = unreadCounts[user] || 0;
+    availableUsers
+        .filter(user => !blockedUsers.includes(user))
+        .forEach(user => {
+            const lastMessage = lastMessages[user];
+            const timestamp = lastMessage?.timestamp || 0;
+            const unreadCount = unreadCounts[user] || 0;
 
-        allContacts.push({
-            type: 'user',
-            id: user,
-            name: getDisplayName(user),
-            username: user,
-            lastMessage: lastMessage,
-            timestamp: timestamp,
-            unreadCount: unreadCount,
-            online: onlineStatus[user]?.online || false
+            allContacts.push({
+                type: 'user',
+                id: user,
+                name: getDisplayName(user),
+                username: user,
+                lastMessage,
+                timestamp,
+                unreadCount,
+                online: onlineStatus[user]?.online || false
+            });
         });
-    });
 
     groups.forEach(group => {
         const lastMessage = lastMessages[group.id];
@@ -116,51 +116,65 @@ export function prepareContacts(availableUsers, groups, lastMessages, unreadCoun
             type: 'group',
             id: group.id,
             name: group.name,
-            lastMessage: lastMessage,
-            timestamp: timestamp,
-            unreadCount: unreadCount
+            lastMessage,
+            timestamp,
+            unreadCount
         });
     });
 
     return allContacts.sort((a, b) => {
-        if (a.timestamp && b.timestamp) {
-            return b.timestamp - a.timestamp;
-        }
+        if (a.timestamp && b.timestamp) return b.timestamp - a.timestamp;
         if (a.timestamp && !b.timestamp) return -1;
         if (!a.timestamp && b.timestamp) return 1;
-
         if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
         if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
-
         return a.name.localeCompare(b.name);
     });
 }
 
-export function filterContacts(sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus) {
+export function filterContacts(sortedContacts, activeFilter, searchQuery, filteredUsers, filteredGroups, lastMessages, unreadCounts, onlineStatus, blockedUsers = []) {
     if (searchQuery.trim() !== '') {
         const searchResults = [];
 
-        filteredGroups.forEach((group) => {
-            searchResults.push({
-                type: 'group',
-                id: group.id,
-                name: group.name,
-                lastMessage: lastMessages[group.id],
-                unreadCount: unreadCounts[group.id] || 0
+        if (activeFilter !== 'blocked') {
+            filteredGroups.forEach(group => {
+                searchResults.push({
+                    type: 'group',
+                    id: group.id,
+                    name: group.name,
+                    lastMessage: lastMessages[group.id],
+                    unreadCount: unreadCounts[group.id] || 0
+                });
             });
-        });
 
-        filteredUsers.forEach((user) => {
-            searchResults.push({
-                type: 'user',
-                id: user,
-                name: getDisplayName(user),
-                username: user,
-                lastMessage: lastMessages[user],
-                unreadCount: unreadCounts[user] || 0,
-                online: onlineStatus[user]?.online || false
+            const searchableUsers = filteredUsers.filter(user => !blockedUsers.includes(user));
+            searchableUsers.forEach(user => {
+                searchResults.push({
+                    type: 'user',
+                    id: user,
+                    name: getDisplayName(user),
+                    username: user,
+                    lastMessage: lastMessages[user],
+                    unreadCount: unreadCounts[user] || 0,
+                    online: onlineStatus[user]?.online || false,
+                    timestamp: lastMessages[user]?.timestamp || 0
+                });
             });
-        });
+        } else {
+            const blockedSearchResults = filteredUsers.filter(user => blockedUsers.includes(user));
+            blockedSearchResults.forEach(user => {
+                searchResults.push({
+                    type: 'blocked',
+                    id: user,
+                    name: getDisplayName(user),
+                    username: user,
+                    lastMessage: null,
+                    unreadCount: 0,
+                    online: false,
+                    timestamp: 0
+                });
+            });
+        }
 
         return searchResults;
     }
@@ -174,10 +188,30 @@ export function filterContacts(sortedContacts, activeFilter, searchQuery, filter
         case 'groups':
             filtered = sortedContacts.filter(contact => contact.type === 'group');
             break;
+        case 'blocked':
+            filtered = blockedUsers.map(user => ({
+                type: 'blocked',
+                id: user,
+                name: getDisplayName(user),
+                username: user,
+                lastMessage: null,
+                unreadCount: 0,
+                online: false,
+                timestamp: 0
+            })).sort((a, b) => a.name.localeCompare(b.name));
+            break;
         case 'all':
         default:
-            filtered = sortedContacts;
+            filtered = sortedContacts.filter(c => !blockedUsers.includes(c.id));
     }
 
     return filtered;
+}
+
+export function isUserBlocked(userId, blockedUsers) {
+    return blockedUsers.includes(userId);
+}
+
+export function getAvailableNonBlockedUsers(users, username, blockedUsers) {
+    return users.filter(u => u !== username && !blockedUsers.includes(u));
 }

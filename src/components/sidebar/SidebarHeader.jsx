@@ -2,12 +2,13 @@
 import React from 'react';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FaSearch, FaUsers } from 'react-icons/fa';
+import { FaSearch, FaUsers, FaBan } from 'react-icons/fa';
 
-export default function SidebarHeader({ username, getProfilePhoto, searchQuery, onSearchChange, clearSearch, openGroupModal, activeFilter, setActiveFilter, sortedContacts }) {
+export default function SidebarHeader({ username, getProfilePhoto, searchQuery, onSearchChange, clearSearch, openGroupModal, activeFilter, setActiveFilter, sortedContacts, blockedUsers }) {
     const { isDark } = useTheme();
 
     const totalUnreadCount = sortedContacts.reduce((total, contact) => total + (contact.unreadCount || 0), 0);
+    const blockedUsersCount = blockedUsers?.length || 0;
 
     return (
         <>
@@ -82,6 +83,23 @@ export default function SidebarHeader({ username, getProfilePhoto, searchQuery, 
                         }`}
                 >
                     Groups
+                </button>
+                <button
+                    onClick={() => setActiveFilter('blocked')}
+                    className={`h-7 px-2 rounded-full text-xs font-medium transition-colors relative ${activeFilter === 'blocked'
+                        ? 'bg-red-500 text-white'
+                        : isDark
+                            ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                        }`}
+                >
+                    <FaBan size={10} className="inline mr-1" />
+                    Blocked
+                    {blockedUsersCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                            {blockedUsersCount > 99 ? '99+' : blockedUsersCount}
+                        </span>
+                    )}
                 </button>
             </div>
         </>

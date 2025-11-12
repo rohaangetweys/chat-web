@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ref, onValue, push, set, serverTimestamp, off } from 'firebase/database';
+import { ref, onValue, push, set, serverTimestamp, off, remove, update } from 'firebase/database';
 import { toast } from 'react-hot-toast';
 import { db } from '@/lib/firebaseConfig';
 
@@ -15,6 +15,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showFileTypeModal, setShowFileTypeModal] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
+    const [blockedUsers, setBlockedUsers] = useState([]);
 
     const fileInputRef = useRef(null);
 
@@ -37,8 +38,34 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         return () => window.removeEventListener('resize', checkMobile);
     }, [activeUser, setShowSidebar]);
 
+    // Load blocked users
+    useEffect(() => {
+        if (!username) return;
+
+        const blockedUsersRef = ref(db, `blockedUsers/${username}`);
+        const unsub = onValue(blockedUsersRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const blockedList = [];
+                snapshot.forEach((child) => {
+                    blockedList.push(child.key);
+                });
+                setBlockedUsers(blockedList);
+            } else {
+                setBlockedUsers([]);
+            }
+        });
+
+        return () => unsub();
+    }, [username]);
+
     useEffect(() => {
         if (!activeUser || !username) {
+            setChat([]);
+            return;
+        }
+
+        // Check if user is blocked
+        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
             setChat([]);
             return;
         }
@@ -75,7 +102,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             console.log('Cleaning up chat listener for:', activeUser);
             unsub();
         };
-    }, [activeUser, username, activeChatType]);
+    }, [activeUser, username, activeChatType, blockedUsers]);
 
     useEffect(() => {
         if (!username) return;
@@ -86,7 +113,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         const initialUnreadCounts = {};
         users?.forEach(user => {
-            if (user !== username) initialUnreadCounts[user] = 0;
+            if (user !== username && !blockedUsers.includes(user)) initialUnreadCounts[user] = 0;
         });
         groups?.forEach(group => {
             const gid = typeof group === 'string' ? group : group?.id;
@@ -95,7 +122,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         setUnreadCounts(initialUnreadCounts);
 
         users?.forEach((user) => {
-            if (user === username) return;
+            if (user === username || blockedUsers.includes(user)) return;
 
             const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
             const chatRef = ref(db, `chats/${chatId}`);
@@ -112,7 +139,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     messages.push({
                         id: child.key,
                         ...msgData,
-                        timestamp: msgData.timestamp ?? 0  // IMPORTANT: use 0 as fallback, not Date.now()
+                        timestamp: msgData.timestamp ?? 0
                     });
                 });
 
@@ -153,7 +180,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     messages.push({
                         id: child.key,
                         ...msgData,
-                        timestamp: msgData.timestamp ?? 0  // <-- KEY: do NOT default to Date.now()
+                        timestamp: msgData.timestamp ?? 0
                     });
                 });
 
@@ -184,8 +211,104 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             console.log('Cleaning up unread count listeners');
             unsubscribeFunctions.forEach(unsub => unsub && unsub());
         };
-    }, [users, groups, username]);
+    }, [users, groups, username, blockedUsers]);
 
+    const blockUser = async (userId) => {
+        if (!username || !userId) {
+            toast.error('Cannot block user');
+            return;
+        }
+
+        try {
+            const blockRef = ref(db, `blockedUsers/${username}/${userId}`);
+            await set(blockRef, {
+                blockedAt: serverTimestamp(),
+                blockedBy: username
+            });
+
+            toast.success(`User ${userId} blocked successfully`);
+
+            // If the blocked user is currently active, clear the chat
+            if (activeUser === userId) {
+                setActiveUser('');
+                setChat([]);
+            }
+        } catch (error) {
+            console.error('Error blocking user:', error);
+            toast.error('Failed to block user');
+        }
+    };
+
+    const unblockUser = async (userId) => {
+        if (!username || !userId) {
+            toast.error('Cannot unblock user');
+            return;
+        }
+
+        try {
+            const blockRef = ref(db, `blockedUsers/${username}/${userId}`);
+            await remove(blockRef);
+            toast.success(`User ${userId} unblocked successfully`);
+        } catch (error) {
+            console.error('Error unblocking user:', error);
+            toast.error('Failed to unblock user');
+        }
+    };
+
+    const clearChat = async (target, type = 'individual') => {
+        if (!username || !target) {
+            toast.error('Cannot clear chat');
+            return;
+        }
+
+        try {
+            if (type === 'individual') {
+                const chatId = username < target ? `${username}_${target}` : `${target}_${username}`;
+                const chatRef = ref(db, `chats/${chatId}`);
+
+                const snapshot = await onValue(chatRef, (snap) => {
+                    if (snap.exists()) {
+                        const messages = [];
+                        snap.forEach((child) => {
+                            messages.push({
+                                id: child.key,
+                                ...child.val()
+                            });
+                        });
+
+                        const userMessages = messages.filter(msg => msg.username === username);
+
+                        if (userMessages.length === 0) {
+                            toast.error('No messages to clear');
+                            return;
+                        }
+
+                        const deletePromises = userMessages.map(msg =>
+                            remove(ref(db, `chats/${chatId}/${msg.id}`))
+                        );
+
+                        Promise.all(deletePromises)
+                            .then(() => {
+                                toast.success('Your messages cleared successfully');
+                            })
+                            .catch(error => {
+                                console.error('Error clearing messages:', error);
+                                toast.error('Failed to clear messages');
+                            });
+                    } else {
+                        toast.error('No chat history found');
+                    }
+                }, { onlyOnce: true });
+            } else {
+                const messagesRef = ref(db, `groupChats/${target}/messages`);
+                await remove(messagesRef);
+                toast.success('Group chat cleared successfully');
+            }
+        } catch (error) {
+            console.error('Error clearing chat:', error);
+            toast.error('Failed to clear chat');
+        }
+    };
 
     const markMessagesAsRead = useCallback((target, type = 'individual') => {
         if (!username || !target) return;
@@ -204,6 +327,11 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
     const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
         if (!activeUser || !username) return;
+
+        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
+            toast.error('Cannot send message to blocked user');
+            return;
+        }
 
         let chatRef;
         if (activeChatType === 'individual') {
@@ -234,6 +362,11 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
     const sendMessage = async (messageText) => {
         if (!activeUser || !username) return;
+
+        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
+            toast.error('Cannot send message to blocked user');
+            return;
+        }
 
         let chatRef;
         if (activeChatType === 'individual') {
@@ -282,6 +415,11 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             return;
         }
 
+        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
+            toast.error('Cannot send file to blocked user');
+            return;
+        }
+
         setUploading(true);
         try {
             const kind = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'file';
@@ -319,6 +457,11 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
     const handleVoiceRecordComplete = async (audioBlob, duration) => {
         if (!activeUser) {
             toast.error('Select a user to send voice message');
+            return;
+        }
+
+        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
+            toast.error('Cannot send voice message to blocked user');
             return;
         }
 
@@ -371,6 +514,12 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             toast.error('Please select a user to chat with');
             return;
         }
+
+        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
+            toast.error('Cannot send files to blocked user');
+            return;
+        }
+
         setShowFileTypeModal(true);
     };
 
@@ -430,5 +579,9 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         handleFileTypeSelect,
         setActiveUserHandler,
         markMessagesAsRead,
+        blockUser,
+        unblockUser,
+        blockedUsers,
+        clearChat,
     };
 }
