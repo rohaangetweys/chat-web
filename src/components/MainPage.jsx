@@ -4,6 +4,7 @@ import Sidebar from '@/components/sidebar/Sidebar';
 import ChatArea from '@/components/chatArea/ChatArea';
 import AppHeader from '@/components/AppHeader';
 import ModalsManager from '@/components/chatArea/ModalsManager';
+import AudioCall from '@/components/call/audioCall';
 import useAuth from '@/hooks/useAuth';
 import useProfiles from '@/hooks/useProfiles';
 import useGroups from '@/hooks/useGroups';
@@ -20,8 +21,15 @@ export default function ChatPage() {
     const { isDark } = useTheme();
 
     const [showSidebar, setShowSidebar] = useState(true);
+    const [callState, setCallState] = useState({
+        isIncomingCall: false,
+        isOutgoingCall: false,
+        isActiveCall: false,
+        callWith: null,
+        callType: 'audio'
+    });
 
-    const { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, handlePaperClipClick, handleFileTypeSelect, unreadCounts, setActiveUserHandler, blockUser, unblockUser, blockedUsers, clearChat } = useChatHandlers({ username, users, groups, setShowSidebar });
+    const { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, handlePaperClipClick, handleFileTypeSelect, unreadCounts, setActiveUserHandler, blockUser, unblockUser, blockedUsers, clearChat } = useChatHandlers({ username, users, groups, setShowSidebar, callState, setCallState });
 
     const handleBackToSidebar = () => {
         setShowSidebar(true);
@@ -33,7 +41,25 @@ export default function ChatPage() {
             toast.error('Voice calls are only available for individual chats');
             return;
         }
+        
+        if (blockedUsers.includes(activeUser)) {
+            toast.error('Cannot call blocked user');
+            return;
+        }
+
+        if (!onlineStatus[activeUser]?.online) {
+            toast.error('User is offline');
+            return;
+        }
+
         console.log('Starting voice call with:', activeUser);
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: true,
+            isActiveCall: false,
+            callWith: activeUser,
+            callType: 'audio'
+        });
     };
 
     const handleBlockUser = async (userId) => {
@@ -52,6 +78,34 @@ export default function ChatPage() {
             return;
         }
         await clearChat(activeUser, activeChatType);
+    };
+
+    const handleCallEnd = () => {
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: false,
+            isActiveCall: false,
+            callWith: null,
+            callType: 'audio'
+        });
+    };
+
+    const handleCallAccept = () => {
+        setCallState(prev => ({
+            ...prev,
+            isIncomingCall: false,
+            isActiveCall: true
+        }));
+    };
+
+    const handleCallReject = () => {
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: false,
+            isActiveCall: false,
+            callWith: null,
+            callType: 'audio'
+        });
     };
 
     if (authChecking) return (
@@ -96,6 +150,18 @@ export default function ChatPage() {
                     />
                 </div>
             </div>
+
+            {/* Audio Call Component */}
+            {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && (
+                <AudioCall
+                    callState={callState}
+                    onCallEnd={handleCallEnd}
+                    onCallAccept={handleCallAccept}
+                    onCallReject={handleCallReject}
+                    username={username}
+                    userProfiles={userProfiles}
+                />
+            )}
         </div>
     );
 }

@@ -207,12 +207,11 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                     </div>
 
                     <div className={`flex items-center gap-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} ref={optionsRef}>
-                        {activeChatType === 'individual' && (
+                        {activeChatType === 'individual' && onlineStatus?.[activeUser]?.online && !isUserBlocked && (
                             <button
                                 onClick={onStartVoiceCall}
                                 className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
                                 title="Voice Call"
-                                disabled={isUserBlocked}
                             >
                                 <FaPhone size={14} />
                             </button>

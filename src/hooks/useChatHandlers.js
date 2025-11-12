@@ -4,7 +4,7 @@ import { ref, onValue, push, set, serverTimestamp, off, remove, update, get } fr
 import { toast } from 'react-hot-toast';
 import { db } from '@/lib/firebaseConfig';
 
-export default function useChatHandlers({ username, users, groups, setShowSidebar }) {
+export default function useChatHandlers({ username, users, groups, setShowSidebar, callState, setCallState }) {
     const [activeUser, setActiveUser] = useState('');
     const [activeChatType, setActiveChatType] = useState('individual');
     const [chat, setChat] = useState([]);
@@ -38,6 +38,71 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, [activeUser, setShowSidebar]);
+
+    // Listen for incoming calls
+    useEffect(() => {
+        if (!username) return;
+
+        const callsRef = ref(db, `calls/${username}`);
+        const unsub = onValue(callsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const callData = snapshot.val();
+                if (callData.status === 'ringing' && !callState.isActiveCall && !callState.isOutgoingCall) {
+                    setCallState({
+                        isIncomingCall: true,
+                        isOutgoingCall: false,
+                        isActiveCall: false,
+                        callWith: callData.from,
+                        callType: callData.type || 'audio'
+                    });
+                }
+            }
+        });
+
+        return () => unsub();
+    }, [username, callState.isActiveCall, callState.isOutgoingCall, setCallState]);
+
+    // Send call invitation
+    const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
+        if (!username || !toUser) return;
+
+        try {
+            const callId = `${username}_${toUser}_${Date.now()}`;
+            const callRef = ref(db, `calls/${toUser}`);
+            
+            await set(callRef, {
+                from: username,
+                type: type,
+                status: 'ringing',
+                callId: callId,
+                timestamp: Date.now()
+            });
+
+            // Set timeout to auto-reject if not answered
+            setTimeout(async () => {
+                const currentCallRef = ref(db, `calls/${toUser}`);
+                const snapshot = await get(currentCallRef);
+                if (snapshot.exists() && snapshot.val().status === 'ringing') {
+                    await remove(currentCallRef);
+                    if (callState.isOutgoingCall) {
+                        setCallState(prev => ({ ...prev, isOutgoingCall: false }));
+                        toast.error('Call not answered');
+                    }
+                }
+            }, 30000); // 30 seconds timeout
+
+        } catch (error) {
+            console.error('Error sending call invitation:', error);
+            toast.error('Failed to start call');
+        }
+    }, [username, callState.isOutgoingCall, setCallState]);
+
+    // Update call state when outgoing call starts
+    useEffect(() => {
+        if (callState.isOutgoingCall && callState.callWith) {
+            sendCallInvitation(callState.callWith, callState.callType);
+        }
+    }, [callState.isOutgoingCall, callState.callWith, callState.callType, sendCallInvitation]);
 
     useEffect(() => {
         if (!username) return;
