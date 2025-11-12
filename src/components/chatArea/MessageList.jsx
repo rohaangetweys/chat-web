@@ -26,13 +26,7 @@ export default function MessageList({ chat, username, getProfilePhoto, onOpenMed
                                 <div className="flex flex-col items-center gap-1 mb-1 shrink-0">
                                     {profilePhoto ? (
                                         <div className="w-8 h-8 rounded-full overflow-hidden">
-                                            <Image
-                                                src={profilePhoto}
-                                                alt={msg.username}
-                                                width={32}
-                                                height={32}
-                                                className="w-full h-full object-cover"
-                                            />
+                                            <Image src={profilePhoto} alt={msg.username} width={32} height={32} className="w-full h-full object-cover" />
                                         </div>
                                     ) : (
                                         <div className="w-8 h-8 rounded-full bg-[#0084ff] flex items-center justify-center text-white text-sm font-semibold">
@@ -60,14 +54,7 @@ export default function MessageList({ chat, username, getProfilePhoto, onOpenMed
                                             className="relative cursor-pointer group"
                                             onClick={() => onOpenMedia(msg.message, 'image')}
                                         >
-                                            <Image
-                                                src={msg.message}
-                                                alt={msg.fileName || 'Uploaded image'}
-                                                width={300}
-                                                height={200}
-                                                className="rounded-2xl max-w-full h-auto object-cover transition-transform group-hover:scale-105"
-                                                style={{ maxHeight: '300px' }}
-                                            />
+                                            <Image src={msg.message} alt={msg.fileName || 'Uploaded image'} width={300} height={200} className="rounded-2xl max-w-full h-auto object-cover transition-transform group-hover:scale-105" style={{ maxHeight: '300px' }} />
                                         </div>
                                         {msg.fileName && (
                                             <p
@@ -83,11 +70,7 @@ export default function MessageList({ chat, username, getProfilePhoto, onOpenMed
                                             className="relative cursor-pointer group"
                                             onClick={() => onOpenMedia(msg.message, 'video')}
                                         >
-                                            <video
-                                                className="rounded-2xl max-w-full h-auto"
-                                                style={{ maxHeight: '400px' }}
-                                                controls
-                                            >
+                                            <video className="rounded-2xl max-w-full h-auto" style={{ maxHeight: '400px' }} controls >
                                                 <source src={msg.message} type="video/mp4" />
                                             </video>
                                         </div>
@@ -120,13 +103,7 @@ export default function MessageList({ chat, username, getProfilePhoto, onOpenMed
                                     <p className="whitespace-pre-wrap break-words">{msg.message}</p>
                                 )}
 
-                                {/* Time */}
-                                <p
-                                    className={`text-[10px] mt-1 text-right ${isOwnMessage ? 'text-white/70' : 'text-gray-500'
-                                        }`}
-                                >
-                                    {msg.time}
-                                </p>
+                                <p className={`text-[10px] mt-1 text-right ${isOwnMessage ? 'text-white/70' : 'text-gray-500'}`}>{msg.time}</p>
                             </div>
                         </div>
                     </div>

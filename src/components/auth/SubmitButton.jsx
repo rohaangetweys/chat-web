@@ -8,9 +8,9 @@ const SubmitButton = ({ loading = false, uploadingPhoto = false, loadingText = '
         <button
             type="submit"
             disabled={isDisabled}
-            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#0084ff] to-[#00b884] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${isDisabled
+            className={`w-full max-sm:py-3 group relative overflow-hidden bg-gradient-to-r from-[#0084ff] to-[#0084ff] text-white py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 hover:shadow-2xl ${isDisabled
                     ? 'opacity-70 cursor-not-allowed'
-                    : 'hover:from-[#00b884] hover:to-[#00c884]'
+                    : 'hover:from-[#0084ff] hover:to-[#0084ff]'
                 } ${className}`}
         >
             <span className="relative z-10 flex items-center justify-center">
@@ -32,7 +32,7 @@ const SubmitButton = ({ loading = false, uploadingPhoto = false, loadingText = '
                     </>
                 )}
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#00b884] to-[#00c884] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0084ff] to-[#0084ff] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </button>
     );
 };

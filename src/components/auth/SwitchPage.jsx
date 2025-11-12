@@ -16,7 +16,7 @@ export default function SwitchPage({ dividerText, linkTo, linkText }) {
             <div className="text-center">
                 <Link
                     href={linkTo}
-                    className="inline-flex items-center text-[#0084ff] font-semibold hover:text-[#00b884] transition-colors group"
+                    className="inline-flex items-center text-[#0084ff] font-semibold hover:text-[#0084ff] transition-colors group"
                 >
                     {linkText}
                     <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />

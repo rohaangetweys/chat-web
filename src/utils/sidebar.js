@@ -1,3 +1,5 @@
+import { FaImage, FaVideo, FaMicrophone, FaFile, FaUserSlash } from 'react-icons/fa';
+
 export function getRandomColor() {
     const r = Math.floor(Math.random() * 100) + 150;
     const g = Math.floor(Math.random() * 100) + 150;
@@ -24,30 +26,65 @@ export function formatLastMessageTime(timestamp) {
 }
 
 export function getLastMessagePreview(targetId, lastMessages, groups, blockedUsers = []) {
-    if (blockedUsers.includes(targetId)) return 'User is blocked';
+    if (blockedUsers.includes(targetId)) {
+        return (
+            <span className="flex items-center text-gray-500">
+                <FaUserSlash className="mr-1 text-sm" />
+                User is blocked
+            </span>
+        );
+    }
+    
     const lastMessage = lastMessages[targetId];
     if (!lastMessage) return 'No messages yet';
+    
     let messageContent = '';
     switch (lastMessage.type) {
         case 'image':
-            messageContent = '📷 Image';
+            messageContent = (
+                <span className="flex items-center">
+                    <FaImage className="mr-1 text-sm" />
+                    Image
+                </span>
+            );
             break;
         case 'video':
-            messageContent = '🎥 Video';
+            messageContent = (
+                <span className="flex items-center">
+                    <FaVideo className="mr-1 text-sm" />
+                    Video
+                </span>
+            );
             break;
         case 'audio':
-            messageContent = '🎤 Voice message';
+            messageContent = (
+                <span className="flex items-center">
+                    <FaMicrophone className="mr-1 text-sm" />
+                    Voice message
+                </span>
+            );
             break;
         case 'file':
-            messageContent = `📄 ${lastMessage.fileName || 'File'}`;
+            messageContent = (
+                <span className="flex items-center">
+                    <FaFile className="mr-1 text-sm" />
+                    {lastMessage.fileName || 'File'}
+                </span>
+            );
             break;
         default:
             messageContent = lastMessage.message || 'Message';
     }
+    
     const isGroup = groups.some(g => g.id === targetId);
     if (isGroup && lastMessage.username) {
-        return `${lastMessage.username}: ${messageContent}`;
+        return (
+            <span>
+                {lastMessage.username}: {messageContent}
+            </span>
+        );
     }
+    
     return messageContent;
 }
 
@@ -95,16 +132,7 @@ export function prepareContacts(availableUsers, groups, lastMessages, unreadCoun
             const timestamp = lastMessage?.timestamp || 0;
             const unreadCount = unreadCounts[user] || 0;
 
-            allContacts.push({
-                type: 'user',
-                id: user,
-                name: getDisplayName(user),
-                username: user,
-                lastMessage,
-                timestamp,
-                unreadCount,
-                online: onlineStatus[user]?.online || false
-            });
+            allContacts.push({ type: 'user', id: user, name: getDisplayName(user), username: user, lastMessage, timestamp, unreadCount, online: onlineStatus[user]?.online || false });
         });
 
     groups.forEach(group => {
@@ -112,14 +140,7 @@ export function prepareContacts(availableUsers, groups, lastMessages, unreadCoun
         const timestamp = lastMessage?.timestamp || 0;
         const unreadCount = unreadCounts[group.id] || 0;
 
-        allContacts.push({
-            type: 'group',
-            id: group.id,
-            name: group.name,
-            lastMessage,
-            timestamp,
-            unreadCount
-        });
+        allContacts.push({ type: 'group', id: group.id, name: group.name, lastMessage, timestamp, unreadCount });
     });
 
     return allContacts.sort((a, b) => {
@@ -138,41 +159,17 @@ export function filterContacts(sortedContacts, activeFilter, searchQuery, filter
 
         if (activeFilter !== 'blocked') {
             filteredGroups.forEach(group => {
-                searchResults.push({
-                    type: 'group',
-                    id: group.id,
-                    name: group.name,
-                    lastMessage: lastMessages[group.id],
-                    unreadCount: unreadCounts[group.id] || 0
-                });
+                searchResults.push({ type: 'group', id: group.id, name: group.name, lastMessage: lastMessages[group.id], unreadCount: unreadCounts[group.id] || 0 });
             });
 
             const searchableUsers = filteredUsers.filter(user => !blockedUsers.includes(user));
             searchableUsers.forEach(user => {
-                searchResults.push({
-                    type: 'user',
-                    id: user,
-                    name: getDisplayName(user),
-                    username: user,
-                    lastMessage: lastMessages[user],
-                    unreadCount: unreadCounts[user] || 0,
-                    online: onlineStatus[user]?.online || false,
-                    timestamp: lastMessages[user]?.timestamp || 0
-                });
+                searchResults.push({ type: 'user', id: user, name: getDisplayName(user), username: user, lastMessage: lastMessages[user], unreadCount: unreadCounts[user] || 0, online: onlineStatus[user]?.online || false, timestamp: lastMessages[user]?.timestamp || 0 });
             });
         } else {
             const blockedSearchResults = filteredUsers.filter(user => blockedUsers.includes(user));
             blockedSearchResults.forEach(user => {
-                searchResults.push({
-                    type: 'blocked',
-                    id: user,
-                    name: getDisplayName(user),
-                    username: user,
-                    lastMessage: null,
-                    unreadCount: 0,
-                    online: false,
-                    timestamp: 0
-                });
+                searchResults.push({ type: 'blocked', id: user, name: getDisplayName(user), username: user, lastMessage: null, unreadCount: 0, online: false, timestamp: 0 });
             });
         }
 
@@ -189,16 +186,7 @@ export function filterContacts(sortedContacts, activeFilter, searchQuery, filter
             filtered = sortedContacts.filter(contact => contact.type === 'group');
             break;
         case 'blocked':
-            filtered = blockedUsers.map(user => ({
-                type: 'blocked',
-                id: user,
-                name: getDisplayName(user),
-                username: user,
-                lastMessage: null,
-                unreadCount: 0,
-                online: false,
-                timestamp: 0
-            })).sort((a, b) => a.name.localeCompare(b.name));
+            filtered = blockedUsers.map(user => ({ type: 'blocked', id: user, name: getDisplayName(user), username: user, lastMessage: null, unreadCount: 0, online: false, timestamp: 0 })).sort((a, b) => a.name.localeCompare(b.name));
             break;
         case 'all':
         default:

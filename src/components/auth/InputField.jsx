@@ -12,7 +12,7 @@ export default function InputField({ label = 'asd', type = 'text', value, onChan
             <div className="relative">
                 {Icon && (
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Icon className="text-[#0084ff] z-50 group-focus-within:text-[#00b884] transition-colors" />
+                        <Icon className="text-[#0084ff] z-50 group-focus-within:text-[#0084ff] transition-colors" />
                     </div>
                 )}
                 <input

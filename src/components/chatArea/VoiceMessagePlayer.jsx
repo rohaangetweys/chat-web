@@ -72,18 +72,15 @@ export default function VoiceMessagePlayer({ msg, index, username }) {
     return (
         <div className="my-1 w-full max-w-xs md:max-w-sm lg:max-w-md">
             <div
-                className={`flex items-center gap-3 p-3 rounded-3xl shadow-sm ${
-                    msg.username === username
+                className={`flex items-center gap-3 p-3 rounded-3xl shadow-sm ${msg.username === username
                         ? 'bg-[#0084ff] text-white'
                         : 'bg-[#f1f0f0] text-gray-800'
-                }`}
+                    }`}
             >
-                {/* Microphone Icon */}
                 <div className="w-10 h-10 bg-white flex items-center justify-center rounded-xl shadow-sm">
                     <FaMicrophone className="text-[#0084ff]" size={18} />
                 </div>
 
-                {/* Play / Pause + Progress */}
                 <div className="flex-1 flex flex-col justify-center">
                     <div className="flex items-center gap-3">
                         <button
@@ -109,14 +106,7 @@ export default function VoiceMessagePlayer({ msg, index, username }) {
                     </span>
                 </div>
 
-                <audio
-                    ref={audioRef}
-                    src={msg.message}
-                    onTimeUpdate={handleTimeUpdate}
-                    onEnded={handleEnded}
-                    onLoadedMetadata={handleLoadedMetadata}
-                    preload="metadata"
-                />
+                <audio ref={audioRef} src={msg.message} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onLoadedMetadata={handleLoadedMetadata} preload="metadata" />
             </div>
         </div>
     );

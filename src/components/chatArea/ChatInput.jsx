@@ -4,26 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaPaperPlane, FaMicrophone, FaStop, FaTimes, FaImage, FaVideo, FaFile } from 'react-icons/fa';
 import { GoPaperclip } from 'react-icons/go';
 
-export default function ChatInput({
-    activeUser,
-    uploading,
-    fileInputRef,
-    onPaperClipClick,
-    onStartRecording,
-    onStopRecording,
-    onCancelRecording,
-    onSendRecording,
-    isRecording,
-    recordingComplete,
-    duration,
-    audioBlob,
-    onSendMessage,
-    message,
-    setMessage,
-    onKeyDown,
-    activeChatType,
-    onFileTypeSelect
-}) {
+export default function ChatInput({ activeUser, uploading, fileInputRef, onPaperClipClick, onStartRecording, onStopRecording, onCancelRecording, onSendRecording, isRecording, recordingComplete, duration, audioBlob, onSendMessage, message, setMessage, onKeyDown, activeChatType, onFileTypeSelect }) {
     const { isDark } = useTheme();
     const [showFileDropdown, setShowFileDropdown] = useState(false);
     const dropdownRef = useRef(null);
@@ -284,7 +265,7 @@ export default function ChatInput({
                         ? isDark
                             ? 'text-gray-600 cursor-not-allowed bg-gray-700'
                             : 'text-gray-400 cursor-not-allowed bg-gray-100'
-                        : 'text-white bg-[#0084ff] hover:bg-[#00b884]'
+                        : 'text-white bg-[#0084ff] hover:bg-[#0084ff]'
                         }`}
                 >
                     <FaPaperPlane size={12} />

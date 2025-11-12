@@ -150,7 +150,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                     {!isRecording && !recordingComplete ? (
                         <button
                             onClick={startRecording}
-                            className="w-full py-3 bg-[#0084ff] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium flex items-center justify-center gap-2 shadow-md"
+                            className="w-full py-3 bg-[#0084ff] text-white rounded-lg hover:bg-[#0084ff] transition-colors font-medium flex items-center justify-center gap-2 shadow-md"
                         >
                             <svg
                                 viewBox="0 0 256 256"
@@ -188,7 +188,7 @@ export default function VoiceRecorder({ onRecordingComplete, onClose }) {
                             </button>
                             <button
                                 onClick={handleSendRecording}
-                                className="flex-1 py-3 bg-[#0084ff] text-white rounded-lg hover:bg-[#00b884] transition-colors font-medium shadow-md"
+                                className="flex-1 py-3 bg-[#0084ff] text-white rounded-lg hover:bg-[#0084ff] transition-colors font-medium shadow-md"
                             >
                                 Send Voice Message
                             </button>

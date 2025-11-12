@@ -19,6 +19,7 @@ export default function Signup() {
     const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [signupError, setSignupError] = useState(null);
     const fileInputRef = useRef(null);
 
     const handleProfilePhotoClick = () => {
@@ -108,6 +109,8 @@ export default function Signup() {
     };
 
     const handleNext = () => {
+        setSignupError(null);
+
         if (currentStep === 1 && validateStep1()) {
             setCurrentStep(2);
         } else if (currentStep === 2 && validateStep2()) {
@@ -118,34 +121,52 @@ export default function Signup() {
     const handleBack = () => {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1);
+            setSignupError(null);
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentStep < 3) {
+                handleNext();
+            } else {
+                handleFinalSubmit(e);
+            }
+        }
+    };
+
+    const handleFinalSubmit = async (e) => {
         e.preventDefault();
         if (!validateStep3()) return;
 
         setLoading(true);
+        setSignupError(null);
         const res = await signup(email, password, username, profilePhoto);
         setLoading(false);
 
         if (!res.success) {
+            let errorMessage = 'Signup failed. Please try again.';
+
             switch (res.message) {
                 case 'auth/email-already-in-use':
-                    toast.error('Email already in use');
+                    errorMessage = 'Email already in use';
                     break;
                 case 'auth/invalid-email':
-                    toast.error('Invalid email address');
+                    errorMessage = 'Invalid email address';
                     break;
                 case 'auth/weak-password':
-                    toast.error('Password should be at least 6 characters');
+                    errorMessage = 'Password should be at least 6 characters';
                     break;
                 case 'username-already-exists':
-                    toast.error('Username already taken');
+                    errorMessage = 'Username already taken';
+                    setSignupError('username-taken');
+                    setCurrentStep(1);
                     break;
                 default:
-                    toast.error('Signup failed. Please try again.');
+                    errorMessage = 'Signup failed. Please try again.';
             }
+            toast.error(errorMessage);
         } else {
             toast.success('Signup successful!');
             router.push('/');
@@ -157,19 +178,17 @@ export default function Signup() {
             <div className="flex items-center space-x-2">
                 {[1, 2, 3].map((step) => (
                     <div key={step} className="flex items-center">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
-                            step === currentStep 
-                                ? 'bg-gradient-to-r from-[#0084ff] to-[#00b884] text-white shadow' 
-                                : step < currentStep 
-                                ? 'bg-green-500 text-white' 
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${step === currentStep
+                            ? 'bg-gradient-to-r from-[#0084ff] to-[#0084ff] text-white shadow'
+                            : step < currentStep
+                                ? 'bg-green-500 text-white'
                                 : 'bg-gray-200 text-gray-500'
-                        }`}>
+                            }`}>
                             {step}
                         </div>
                         {step < 3 && (
-                            <div className={`w-4 h-1 mx-1 transition-all duration-300 ${
-                                step < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                            }`} />
+                            <div className={`w-4 h-1 mx-1 transition-all duration-300 ${step < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                                }`} />
                         )}
                     </div>
                 ))}
@@ -182,7 +201,15 @@ export default function Signup() {
             case 1:
                 return (
                     <div className="space-y-4">
-                        {/* Profile Photo Upload - More Compact */}
+                        {signupError === 'username-taken' && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                                <div className="flex items-center text-red-800">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                    <span className="text-sm font-medium">Username already taken. Please choose a different one.</span>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex flex-col items-center">
                             <div
                                 className="relative group cursor-pointer"
@@ -234,15 +261,7 @@ export default function Signup() {
                             </p>
                         </div>
 
-                        <InputField 
-                            label="Username" 
-                            type="text" 
-                            value={username} 
-                            onChange={(e) => setUsername(e.target.value.toLowerCase())} 
-                            placeholder="Choose a username" 
-                            Icon={FaUser} 
-                            required 
-                        />
+                        <InputField label="Username" type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} onKeyPress={handleKeyPress} placeholder="Choose a username" Icon={FaUser} required />
                         <p className="text-xs text-gray-500 -mt-2 max-sm:text-[10px]">3-20 characters, letters, numbers, and underscores only</p>
                     </div>
                 );
@@ -250,15 +269,7 @@ export default function Signup() {
             case 2:
                 return (
                     <div className="space-y-4">
-                        <InputField 
-                            label="Email" 
-                            type="email" 
-                            value={email} 
-                            onChange={(e) => setEmail(e.target.value)} 
-                            placeholder="Enter your email" 
-                            Icon={FaEnvelope} 
-                            required 
-                        />
+                        <InputField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyPress={handleKeyPress} placeholder="Enter your email" Icon={FaEnvelope} required />
                         <p className="text-xs text-gray-500 -mt-2 max-sm:text-[10px]">
                             We'll send a verification email to this address
                         </p>
@@ -267,17 +278,24 @@ export default function Signup() {
 
             case 3:
                 return (
-                    <div className="space-y-4">
-                        <InputField 
-                            label="Password" 
-                            type="password" 
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)} 
-                            placeholder="Create a strong password" 
-                            Icon={FaLock} 
-                            required 
-                        />
-                    </div>
+                    <form onSubmit={handleFinalSubmit} className="space-y-4">
+                        <InputField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyPress={handleKeyPress} placeholder="Create a strong password" Icon={FaLock} required />
+
+                        <div className="flex justify-between space-x-3">
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                className="flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300 font-medium text-sm shadow-sm hover:shadow flex-1"
+                            >
+                                <FaArrowLeft className="mr-1.5 text-xs" />
+                                Back to Email
+                            </button>
+
+                            <div className="flex-1">
+                                <SubmitButton loading={loading} uploadingPhoto={uploadingPhoto} loadingText="Creating Account..." uploadingText="Uploading Photo..." defaultText="Complete Signup" />
+                            </div>
+                        </div>
+                    </form>
                 );
 
             default:
@@ -288,37 +306,32 @@ export default function Signup() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 relative overflow-hidden w-full">
             <div className="relative z-10 w-full max-w-md max-sm:max-w-2xl">
-                {/* Header Section - More Compact */}
                 <div className="text-center mb-6 max-sm:mb-4">
                     <div className="flex justify-center mb-3 max-sm:mb-2">
                         <div className="relative">
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#0084ff] to-[#00b884] rounded-xl flex items-center justify-center shadow">
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#0084ff] to-[#0084ff] rounded-xl flex items-center justify-center shadow">
                                 <FaComments className="text-white text-lg" />
                             </div>
                         </div>
                     </div>
-                    <h1 className="text-2xl max-sm:text-xl font-bold bg-gradient-to-r from-[#0084ff] to-[#00b884] bg-clip-text text-transparent mb-1">
+                    <h1 className="text-2xl max-sm:text-xl font-bold bg-gradient-to-r from-[#0084ff] to-[#0084ff] bg-clip-text text-transparent mb-1">
                         Create Account
                     </h1>
                     <p className="text-gray-600 text-sm max-sm:text-xs">
                         Step {currentStep} of 3 - {
-                            currentStep === 1 ? 'Profile Setup' : 
-                            currentStep === 2 ? 'Contact Info' : 
-                            'Security'
+                            currentStep === 1 ? 'Profile Setup' :
+                                currentStep === 2 ? 'Contact Info' :
+                                    'Security'
                         }
                     </p>
                 </div>
 
-                {/* Card - More Compact */}
                 <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 p-6">
-                    <form onSubmit={handleSubmit}>
-                        {/* Step Indicator */}
-                        {renderStepIndicator()}
+                    {renderStepIndicator()}
 
-                        {/* Step Content */}
-                        {renderStepContent()}
+                    {renderStepContent()}
 
-                        {/* Navigation Buttons - More Compact */}
+                    {currentStep < 3 && (
                         <div className="flex justify-between mt-6 space-x-3">
                             {currentStep > 1 ? (
                                 <button
@@ -333,35 +346,20 @@ export default function Signup() {
                                 <div></div>
                             )}
 
-                            {currentStep < 3 ? (
-                                <button
-                                    type="button"
-                                    onClick={handleNext}
-                                    className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-[#0084ff] to-[#00b884] text-white rounded-lg hover:shadow transition-all duration-300 font-medium text-sm shadow-md"
-                                >
-                                    Next
-                                    <FaArrowRight className="ml-1.5 text-xs" />
-                                </button>
-                            ) : (
-                                <SubmitButton 
-                                    loading={loading} 
-                                    uploadingPhoto={uploadingPhoto} 
-                                    loadingText="Creating Account..." 
-                                    uploadingText="Uploading Photo..." 
-                                    defaultText="Complete Signup" 
-                                />
-                            )}
+                            <button
+                                type="button"
+                                onClick={handleNext}
+                                className="flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-[#0084ff] to-[#0084ff] text-white rounded-lg hover:shadow transition-all duration-300 font-medium text-sm shadow-md"
+                            >
+                                Next
+                                <FaArrowRight className="ml-1.5 text-xs" />
+                            </button>
                         </div>
-                    </form>
+                    )}
 
-                    {/* Only show switch page on first step */}
                     {currentStep === 1 && (
                         <div className="mt-4">
-                            <SwitchPage 
-                                dividerText={'Already have an account?'} 
-                                linkTo={'/login'} 
-                                linkText={'Sign in to your account'} 
-                            />
+                            <SwitchPage dividerText={'Already have an account?'} linkTo={'/login'} linkText={'Sign in to your account'} />
                         </div>
                     )}
                 </div>

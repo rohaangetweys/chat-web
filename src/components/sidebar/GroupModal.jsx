@@ -30,7 +30,7 @@ export default function GroupModal({ availableUsers, onlineStatus, groupName, se
 
                 <div className="flex gap-2 justify-end">
                     <button onClick={closeGroupModal} className={`px-3 py-1 text-sm ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} rounded transition-colors font-medium`}>Cancel</button>
-                    <button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0} className="px-3 py-1 text-sm bg-[#0084ff] text-white rounded hover:bg-[#00b884] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">Create</button>
+                    <button onClick={handleCreateGroup} disabled={!groupName.trim() || selectedUsers.length === 0} className="px-3 py-1 text-sm bg-[#0084ff] text-white rounded hover:bg-[#0084ff] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">Create</button>
                 </div>
             </div>
         </div>

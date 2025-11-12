@@ -179,13 +179,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                                 </div>
                             ) : getProfilePhotoUrl(activeUser) ? (
                                 <div className="w-8 h-8 rounded-full overflow-hidden border border-[#0084ff]">
-                                    <Image
-                                        src={getProfilePhotoUrl(activeUser)}
-                                        alt={activeUser}
-                                        width={32}
-                                        height={32}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    <Image src={getProfilePhotoUrl(activeUser)} alt={activeUser} width={32} height={32} className="w-full h-full object-cover" />
                                 </div>
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-[#0084ff] flex justify-center items-center text-white text-sm font-semibold">

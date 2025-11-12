@@ -65,14 +65,14 @@ async function signup(email, password, username, profilePhoto = null) {
             createdAt: new Date().toISOString()
         });
 
-        await set(ref(db, `users/${username}`), {
-            uid: user.uid,
-            email: email,
-            username: username,
-            profilePhoto: profilePhotoUrl,
-            createdAt: new Date().toISOString(),
-            lastSeen: serverTimestamp(),
-            online: true
+        await set(ref(db, `users/${username}`), { 
+            uid: user.uid, 
+            email: email, 
+            username: username, 
+            profilePhoto: profilePhotoUrl, 
+            createdAt: new Date().toISOString(), 
+            lastSeen: serverTimestamp(), 
+            online: true 
         });
 
         return { success: true, user: user };

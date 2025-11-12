@@ -48,48 +48,22 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 const callData = snapshot.val();
 
                 if (callData.status === 'ringing' && callData.from !== username && !callState.isActiveCall && !callState.isOutgoingCall) {
-                    setCallState({
-                        isIncomingCall: true,
-                        isOutgoingCall: false,
-                        isActiveCall: false,
-                        callWith: callData.from,
-                        callType: callData.type || 'audio',
-                        callId: callData.callId
-                    });
+                    setCallState({ isIncomingCall: true, isOutgoingCall: false, isActiveCall: false, callWith: callData.from, callType: callData.type || 'audio', callId: callData.callId });
                 }
 
                 if (callData.status === 'accepted' && callState.isOutgoingCall && callState.callWith === callData.to) {
-                    setCallState(prev => ({
-                        ...prev,
-                        isIncomingCall: false,
-                        isOutgoingCall: false,
-                        isActiveCall: true
-                    }));
+                    setCallState(prev => ({ ...prev, isIncomingCall: false, isOutgoingCall: false, isActiveCall: true }));
                     toast.success('Call accepted!');
                 }
 
                 if (callData.status === 'rejected' && callState.isOutgoingCall && callState.callWith === callData.to) {
-                    setCallState({
-                        isIncomingCall: false,
-                        isOutgoingCall: false,
-                        isActiveCall: false,
-                        callWith: null,
-                        callType: 'audio',
-                        callId: null
-                    });
+                    setCallState({ isIncomingCall: false, isOutgoingCall: false, isActiveCall: false, callWith: null, callType: 'audio', callId: null });
                     toast.error('Call rejected');
                 }
 
                 if (callData.status === 'ended' && (callState.isActiveCall || callState.isOutgoingCall || callState.isIncomingCall)) {
-                    setCallState({
-                        isIncomingCall: false,
-                        isOutgoingCall: false,
-                        isActiveCall: false,
-                        callWith: null,
-                        callType: 'audio',
-                        callId: null
-                    });
-                    
+                    setCallState({ isIncomingCall: false, isOutgoingCall: false, isActiveCall: false, callWith: null, callType: 'audio', callId: null });
+
                     if (callData.endedBy !== username) {
                         toast.info('Call ended by other user');
                     }
@@ -106,20 +80,10 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         try {
             const callId = `${username}_${toUser}_${Date.now()}`;
             const callRef = ref(db, `calls/${toUser}`);
-            
-            await set(callRef, {
-                from: username,
-                to: toUser,
-                type: type,
-                status: 'ringing',
-                callId: callId,
-                timestamp: Date.now()
-            });
 
-            setCallState(prev => ({
-                ...prev,
-                callId: callId
-            }));
+            await set(callRef, { from: username, to: toUser, type: type, status: 'ringing', callId: callId, timestamp: Date.now() });
+
+            setCallState(prev => ({ ...prev, callId: callId }));
 
         } catch (error) {
             console.error('Error sending call invitation:', error);
@@ -138,13 +102,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         try {
             const callRef = ref(db, `calls/${toUser}`);
-            await set(callRef, {
-                from: username,
-                to: toUser,
-                status: response,
-                callId: callId,
-                timestamp: Date.now()
-            });
+            await set(callRef, { from: username, to: toUser, status: response, callId: callId, timestamp: Date.now() });
         } catch (error) {
             console.error('Error sending call response:', error);
             toast.error('Failed to send call response');
@@ -156,14 +114,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         try {
             const otherUserCallRef = ref(db, `calls/${callWith}`);
-            await set(otherUserCallRef, {
-                from: username,
-                to: callWith,
-                status: 'ended',
-                callId: callId,
-                endedBy: username,
-                timestamp: Date.now()
-            });
+            await set(otherUserCallRef, { from: username, to: callWith, status: 'ended', callId: callId, endedBy: username, timestamp: Date.now() });
 
             const currentUserCallRef = ref(db, `calls/${username}`);
             await remove(currentUserCallRef);
@@ -242,10 +193,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             snapshot.forEach((child) => {
                 const msgData = child.val();
                 if (msgData.timestamp > clearTimestamp) {
-                    msgs.push({
-                        id: child.key,
-                        ...msgData
-                    });
+                    msgs.push({ id: child.key, ...msgData });
                 }
             });
 
@@ -295,11 +243,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 snapshot.forEach(child => {
                     const msgData = child.val();
                     if (msgData.timestamp > clearedTimestamp) {
-                        messages.push({
-                            id: child.key,
-                            ...msgData,
-                            timestamp: msgData.timestamp ?? 0
-                        });
+                        messages.push({ id: child.key, ...msgData, timestamp: msgData.timestamp ?? 0 });
                     }
                 });
 
@@ -339,11 +283,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 snapshot.forEach((child) => {
                     const msgData = child.val();
                     if (msgData.timestamp > clearedTimestamp) {
-                        messages.push({
-                            id: child.key,
-                            ...msgData,
-                            timestamp: msgData.timestamp ?? 0
-                        });
+                        messages.push({ id: child.key, ...msgData, timestamp: msgData.timestamp ?? 0 });
                     }
                 });
 
@@ -379,10 +319,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         try {
             const blockRef = ref(db, `blockedUsers/${username}/${userId}`);
-            await set(blockRef, {
-                blockedAt: serverTimestamp(),
-                blockedBy: username
-            });
+            await set(blockRef, { blockedAt: serverTimestamp(), blockedBy: username });
 
             toast.success(`User ${userId} blocked successfully`);
 
@@ -421,11 +358,11 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         try {
             const clearKey = type === 'individual' ? target : `group_${target}`;
             const clearRef = ref(db, `clearedChats/${username}/${clearKey}`);
-            
+
             await set(clearRef, Date.now());
-            
+
             toast.success('Chat cleared successfully');
-            
+
             if (activeUser === target && activeChatType === type) {
                 setChat([]);
             }
@@ -443,10 +380,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         localStorage.setItem(lastReadKey, currentTime.toString());
 
-        setUnreadCounts(prev => ({
-            ...prev,
-            [target]: 0
-        }));
+        setUnreadCounts(prev => ({ ...prev, [target]: 0 }));
     }, [username]);
 
     const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
@@ -467,16 +401,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         try {
             const newMessageRef = push(chatRef);
-            await set(newMessageRef, {
-                username,
-                message: url,
-                type,
-                fileName: fileName || '',
-                format: format || '',
-                duration: duration || '',
-                timestamp: Date.now(),
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            });
+            await set(newMessageRef, { username, message: url, type, fileName: fileName || '', format: format || '', duration: duration || '', timestamp: Date.now(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
         } catch (err) {
             console.error('sendFileMessage error:', err);
             toast.error('Failed to send file');
@@ -501,25 +426,16 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         try {
             const newMessageRef = push(chatRef);
-            
+
             if (type === 'audio' && file) {
                 setUploading(true);
                 try {
                     toast.loading('Uploading voice message...', { id: 'voice-upload' });
                     const audioFile = new File([file], `voice-message-${Date.now()}.webm`, { type: 'audio/webm' });
                     const data = await uploadToCloudinary(audioFile);
-                    
-                    await set(newMessageRef, {
-                        username,
-                        message: data.secure_url,
-                        type: 'audio',
-                        fileName: 'Voice Message',
-                        format: 'webm',
-                        duration: duration,
-                        timestamp: Date.now(),
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    });
-                    
+
+                    await set(newMessageRef, { username, message: data.secure_url, type: 'audio', fileName: 'Voice Message', format: 'webm', duration: duration, timestamp: Date.now(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+
                     toast.success('Voice message sent!', { id: 'voice-upload' });
                 } catch (error) {
                     console.error('Voice message upload error:', error);
@@ -529,13 +445,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     setUploading(false);
                 }
             } else {
-                await set(newMessageRef, {
-                    username,
-                    message: messageText,
-                    type: 'text',
-                    timestamp: Date.now(),
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                });
+                await set(newMessageRef, { username, message: messageText, type: 'text', timestamp: Date.now(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
             }
         } catch (err) {
             console.error('sendMessage error:', err);
@@ -639,13 +549,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         try {
             const groupId = `${groupName.replace(/\s+/g, '_')}_${Date.now()}`;
             const groupRef = ref(db, `groupChats/${groupId}`);
-            await set(groupRef, {
-                groupName,
-                createdBy: username,
-                createdAt: new Date().toISOString(),
-                members: [...selectedUsers, username],
-                messages: {}
-            });
+            await set(groupRef, { groupName, createdBy: username, createdAt: new Date().toISOString(), members: [...selectedUsers, username], messages: {} });
             toast.success(`Group "${groupName}" created successfully!`);
             return groupId;
         } catch (error) {
@@ -698,38 +602,5 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     };
 
-    return {
-        activeUser,
-        setActiveUser,
-        activeChatType,
-        setActiveChatType,
-        chat,
-        uploading,
-        fileInputRef,
-        isMobileView,
-        showVoiceRecorder,
-        setShowVoiceRecorder,
-        showFileTypeModal,
-        setShowFileTypeModal,
-        unreadCounts,
-        modalContent,
-        modalType,
-        openMediaModal,
-        closeMediaModal,
-        handleFileInputChange,
-        handleVoiceRecordComplete,
-        createGroupChat,
-        sendMessage,
-        uploadToCloudinary,
-        handlePaperClipClick,
-        handleFileTypeSelect,
-        setActiveUserHandler,
-        markMessagesAsRead,
-        blockUser,
-        unblockUser,
-        blockedUsers,
-        clearChat,
-        sendCallResponse,
-        endCallForBoth
-    };
+    return { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, unreadCounts, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, uploadToCloudinary, handlePaperClipClick, handleFileTypeSelect, setActiveUserHandler, markMessagesAsRead, blockUser, unblockUser, blockedUsers, clearChat, sendCallResponse, endCallForBoth };
 }
