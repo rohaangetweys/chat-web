@@ -3,12 +3,33 @@ import React, { useEffect, useRef, useState } from 'react';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import { getProfilePhoto, getActiveUserStatus } from '../../utils/chatArea';
-import { FaArrowLeft, FaPhone, FaEllipsisV, FaComments, FaComment, FaBan, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaPhone, FaVideo, FaEllipsisV, FaComments, FaComment, FaBan, FaTrash } from 'react-icons/fa';
 import { HiOutlineUserGroup } from 'react-icons/hi2';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function ChatArea({ activeUser, chat = [], username, uploading, fileInputRef, onOpenMedia, activeChatType, onPaperClipClick, onSendMessage, userProfiles, onlineStatus, groups, isMobileView, onBackToSidebar, onStartVoiceCall, onClearChat, blockedUsers, onBlockUser, onUnblockUser }) {
+export default function ChatArea({ 
+    activeUser, 
+    chat = [], 
+    username, 
+    uploading, 
+    fileInputRef, 
+    onOpenMedia, 
+    activeChatType, 
+    onPaperClipClick, 
+    onSendMessage, 
+    userProfiles, 
+    onlineStatus, 
+    groups, 
+    isMobileView, 
+    onBackToSidebar, 
+    onStartVoiceCall,
+    onStartVideoCall,
+    onClearChat, 
+    blockedUsers, 
+    onBlockUser, 
+    onUnblockUser 
+}) {
     const [message, setMessage] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [recordingComplete, setRecordingComplete] = useState(false);
@@ -217,13 +238,23 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
 
                     <div className={`flex items-center gap-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} ref={optionsRef}>
                         {activeChatType === 'individual' && onlineStatus?.[activeUser]?.online && !isUserBlocked && (
-                            <button
-                                onClick={onStartVoiceCall}
-                                className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
-                                title="Voice Call"
-                            >
-                                <FaPhone size={14} />
-                            </button>
+                            <>
+                                <button
+                                    onClick={onStartVoiceCall}
+                                    className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+                                    title="Voice Call"
+                                >
+                                    <FaPhone size={14} />
+                                </button>
+                                
+                                <button
+                                    onClick={onStartVideoCall}
+                                    className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+                                    title="Video Call"
+                                >
+                                    <FaVideo size={14} />
+                                </button>
+                            </>
                         )}
 
                         <div className="relative">

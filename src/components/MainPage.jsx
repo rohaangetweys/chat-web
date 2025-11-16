@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 import AudioCall from './call/audioCall';
+import VideoCall from './call/videoCall';
 
 export default function ChatPage() {
     const router = useRouter();
@@ -44,7 +45,38 @@ export default function ChatPage() {
             return;
         }
         console.log('Starting voice call with:', activeUser);
-        setCallState({ isIncomingCall: false, isOutgoingCall: true, isActiveCall: false, callWith: activeUser, callType: 'audio', callId: null });
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: true,
+            isActiveCall: false,
+            callWith: activeUser,
+            callType: 'audio',
+            callId: null
+        });
+    };
+
+    const startVideoCall = () => {
+        if (!activeUser || activeChatType === 'group') {
+            toast.error('Video calls are only available for individual chats');
+            return;
+        }
+        if (blockedUsers.includes(activeUser)) {
+            toast.error('Cannot call blocked user');
+            return;
+        }
+        if (!onlineStatus[activeUser]?.online) {
+            toast.error('User is offline');
+            return;
+        }
+        console.log('Starting video call with:', activeUser);
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: true,
+            isActiveCall: false,
+            callWith: activeUser,
+            callType: 'video',
+            callId: null
+        });
     };
 
     const handleBlockUser = async (userId) => {
@@ -66,7 +98,14 @@ export default function ChatPage() {
     };
 
     const handleCallEnd = () => {
-        setCallState({ isIncomingCall: false, isOutgoingCall: false, isActiveCall: false, callWith: null, callType: 'audio', callId: null });
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: false,
+            isActiveCall: false,
+            callWith: null,
+            callType: 'audio',
+            callId: null
+        });
     };
 
     const handleCallAccept = () => {
@@ -74,7 +113,14 @@ export default function ChatPage() {
     };
 
     const handleCallReject = () => {
-        setCallState({ isIncomingCall: false, isOutgoingCall: false, isActiveCall: false, callWith: null, callType: 'audio', callId: null });
+        setCallState({
+            isIncomingCall: false,
+            isOutgoingCall: false,
+            isActiveCall: false,
+            callWith: null,
+            callType: 'audio',
+            callId: null
+        });
     };
 
     if (authChecking) return (
@@ -102,19 +148,54 @@ export default function ChatPage() {
                 </div>
 
                 <div className={`rounded-t-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <ChatArea fileInputRef={fileInputRef} activeUser={activeUser} chat={chat} uploading={uploading} username={username} onOpenMedia={openMediaModal} activeChatType={activeChatType} onPaperClipClick={handlePaperClipClick} onSendMessage={sendMessage} userProfiles={userProfiles} onlineStatus={onlineStatus} groups={groups} isMobileView={isMobileView} onBackToSidebar={handleBackToSidebar} onStartVoiceCall={startVoiceCall} onClearChat={handleClearChat} blockedUsers={blockedUsers} onBlockUser={handleBlockUser} onUnblockUser={handleUnblockUser} />
+                    <ChatArea
+                        fileInputRef={fileInputRef}
+                        activeUser={activeUser}
+                        chat={chat}
+                        uploading={uploading}
+                        username={username}
+                        onOpenMedia={openMediaModal}
+                        activeChatType={activeChatType}
+                        onPaperClipClick={handlePaperClipClick}
+                        onSendMessage={sendMessage}
+                        userProfiles={userProfiles}
+                        onlineStatus={onlineStatus}
+                        groups={groups}
+                        isMobileView={isMobileView}
+                        onBackToSidebar={handleBackToSidebar}
+                        onStartVoiceCall={startVoiceCall}
+                        onStartVideoCall={startVideoCall}
+                        onClearChat={handleClearChat}
+                        blockedUsers={blockedUsers}
+                        onBlockUser={handleBlockUser}
+                        onUnblockUser={handleUnblockUser}
+                    />
                     <ModalsManager modalContent={modalContent} modalType={modalType} closeMediaModal={closeMediaModal} />
                 </div>
             </div>
 
-            {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && (
-                <AudioCall 
-                    callState={callState} 
-                    onCallEnd={handleCallEnd} 
-                    onCallAccept={handleCallAccept} 
-                    onCallReject={handleCallReject} 
-                    username={username} 
-                    userProfiles={userProfiles} 
+            {/* Audio Call */}
+            {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && callState.callType === 'audio' && (
+                <AudioCall
+                    callState={callState}
+                    onCallEnd={handleCallEnd}
+                    onCallAccept={handleCallAccept}
+                    onCallReject={handleCallReject}
+                    username={username}
+                    userProfiles={userProfiles}
+                    setCallState={setCallState}
+                />
+            )}
+
+            {/* Video Call */}
+            {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && callState.callType === 'video' && (
+                <VideoCall
+                    callState={callState}
+                    onCallEnd={handleCallEnd}
+                    onCallAccept={handleCallAccept}
+                    onCallReject={handleCallReject}
+                    username={username}
+                    userProfiles={userProfiles}
                     setCallState={setCallState}
                 />
             )}

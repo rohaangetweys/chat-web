@@ -19,7 +19,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
     const [clearedChats, setClearedChats] = useState({});
 
     const fileInputRef = useRef(null);
-    const callRefRef = useRef(null); // Store the database reference instead of the unsubscribe function
+    const callRefRef = useRef(null);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -40,12 +40,51 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         return () => window.removeEventListener('resize', checkMobile);
     }, [activeUser, setShowSidebar]);
 
-    // Enhanced call listener with WebRTC signaling
+    // Call invitation function
+    const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
+        if (!username || !toUser) return;
+
+        try {
+            const callId = `${username}_${toUser}_${Date.now()}`;
+            const callRef = ref(db, `calls/${toUser}`);
+
+            await set(callRef, { 
+                from: username, 
+                to: toUser, 
+                type: type, // 'audio' or 'video'
+                status: 'ringing', 
+                callId: callId, 
+                timestamp: Date.now() 
+            });
+
+            // Also set call state with callId
+            setCallState(prev => ({ 
+                ...prev, 
+                callId: callId 
+            }));
+
+            console.log(`${type} call invitation sent to:`, toUser, 'with ID:', callId);
+
+        } catch (error) {
+            console.error('Error sending call invitation:', error);
+            toast.error('Failed to start call');
+        }
+    }, [username, setCallState]);
+
+    // Auto-send call invitation when outgoing call state is set
+    useEffect(() => {
+        if (callState.isOutgoingCall && callState.callWith && !callState.callId) {
+            console.log('Sending call invitation to:', callState.callWith, 'type:', callState.callType);
+            sendCallInvitation(callState.callWith, callState.callType);
+        }
+    }, [callState.isOutgoingCall, callState.callWith, callState.callType, callState.callId, sendCallInvitation]);
+
+    // Enhanced call listener
     useEffect(() => {
         if (!username) return;
 
         const callsRef = ref(db, `calls/${username}`);
-        callRefRef.current = callsRef; // Store the reference
+        callRefRef.current = callsRef;
         
         const unsub = onValue(callsRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -119,49 +158,10 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
         return () => {
             if (callRefRef.current) {
-                off(callRefRef.current); // Use the stored reference
+                off(callRefRef.current);
             }
         };
     }, [username, callState, setCallState]);
-
-    // Enhanced call invitation with proper call ID
-    const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
-        if (!username || !toUser) return;
-
-        try {
-            const callId = `${username}_${toUser}_${Date.now()}`;
-            const callRef = ref(db, `calls/${toUser}`);
-
-            await set(callRef, { 
-                from: username, 
-                to: toUser, 
-                type: type, 
-                status: 'ringing', 
-                callId: callId, 
-                timestamp: Date.now() 
-            });
-
-            // Also set call state with callId
-            setCallState(prev => ({ 
-                ...prev, 
-                callId: callId 
-            }));
-
-            console.log('Call invitation sent to:', toUser, 'with ID:', callId);
-
-        } catch (error) {
-            console.error('Error sending call invitation:', error);
-            toast.error('Failed to start call');
-        }
-    }, [username, setCallState]);
-
-    // Auto-send call invitation when outgoing call state is set
-    useEffect(() => {
-        if (callState.isOutgoingCall && callState.callWith && !callState.callId) {
-            console.log('Sending call invitation to:', callState.callWith);
-            sendCallInvitation(callState.callWith, callState.callType);
-        }
-    }, [callState.isOutgoingCall, callState.callWith, callState.callType, callState.callId, sendCallInvitation]);
 
     // Enhanced call response function
     const sendCallResponse = useCallback(async (toUser, response, callId) => {
@@ -207,7 +207,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     }, [username]);
 
-    // Rest of the existing code remains the same...
     useEffect(() => {
         if (!username) return;
 
@@ -687,5 +686,39 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     };
 
-    return { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, unreadCounts, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, uploadToCloudinary, handlePaperClipClick, handleFileTypeSelect, setActiveUserHandler, markMessagesAsRead, blockUser, unblockUser, blockedUsers, clearChat, sendCallResponse, endCallForBoth };
+    return { 
+        activeUser, 
+        setActiveUser, 
+        activeChatType, 
+        setActiveChatType, 
+        chat, 
+        uploading, 
+        fileInputRef, 
+        isMobileView, 
+        showVoiceRecorder, 
+        setShowVoiceRecorder, 
+        showFileTypeModal, 
+        setShowFileTypeModal, 
+        unreadCounts, 
+        modalContent, 
+        modalType, 
+        openMediaModal, 
+        closeMediaModal, 
+        handleFileInputChange, 
+        handleVoiceRecordComplete, 
+        createGroupChat, 
+        sendMessage, 
+        uploadToCloudinary, 
+        handlePaperClipClick, 
+        handleFileTypeSelect, 
+        setActiveUserHandler, 
+        markMessagesAsRead, 
+        blockUser, 
+        unblockUser, 
+        blockedUsers, 
+        clearChat, 
+        sendCallResponse, 
+        endCallForBoth,
+        sendCallInvitation 
+    };
 }

@@ -24,9 +24,8 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
     useEffect(() => {
         if (!username) return;
 
-        console.log('Initializing PeerJS with ID:', username);
+        console.log('🎤 Initializing PeerJS for audio call with ID:', username);
         
-        // PeerJS configuration
         const peerInstance = new Peer(username, {
             debug: 3,
             config: {
@@ -42,9 +41,9 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
             setPeer(peerInstance);
         });
 
-        // Listen for incoming calls
+        // Listen for incoming audio calls
         peerInstance.on('call', async (call) => {
-            console.log('📞 Incoming call from:', call.peer);
+            console.log('📞 Incoming audio call from:', call.peer);
             
             try {
                 // Get microphone access
@@ -57,7 +56,7 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                     video: false 
                 });
                 
-                console.log('🎤 Local stream obtained');
+                console.log('🎤 Microphone access granted');
                 setLocalStream(stream);
                 
                 // Setup local audio
@@ -72,7 +71,7 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                 
                 // Handle remote stream
                 call.on('stream', (remoteStream) => {
-                    console.log('🔊 Remote stream received');
+                    console.log('🔊 Remote audio stream received');
                     setRemoteStream(remoteStream);
                     
                     if (remoteAudioRef.current) {
@@ -162,6 +161,7 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                 // Handle call ended
                 if (data.status === 'ended') {
                     console.log('📞 Call ended by remote');
+                    toast.info('Call ended');
                     handleEndCall();
                 }
             }
@@ -250,7 +250,7 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
 
             // Handle remote stream
             call.on('stream', (remoteStream) => {
-                console.log('🔊 Remote stream received in outgoing call');
+                console.log('🔊 Remote audio stream received in outgoing call');
                 setRemoteStream(remoteStream);
                 
                 if (remoteAudioRef.current) {
