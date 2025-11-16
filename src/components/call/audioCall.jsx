@@ -1,19 +1,18 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ref, remove, set, onValue, off, push } from 'firebase/database';
+import { ref, remove, set, onValue, off } from 'firebase/database';
 import { db } from '@/lib/firebaseConfig';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FaPhone, FaPhoneSlash, FaMicrophone, FaMicrophoneSlash, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
+import { FaPhone, FaPhoneSlash } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import Peer from 'peerjs';
 
 export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallReject, username, userProfiles, setCallState }) {
     const [localStream, setLocalStream] = useState(null);
     const [remoteStream, setRemoteStream] = useState(null);
-    const [isMuted, setIsMuted] = useState(false);
-    const [isSpeakerOn, setIsSpeakerOn] = useState(true);
     const [callDuration, setCallDuration] = useState(0);
-    const [peerConnection, setPeerConnection] = useState(null);
-    const [callData, setCallData] = useState(null);
+    const [peer, setPeer] = useState(null);
+    const [currentCall, setCurrentCall] = useState(null);
     
     const localAudioRef = useRef(null);
     const remoteAudioRef = useRef(null);
@@ -21,84 +20,149 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
     const callRefRef = useRef(null);
     const { isDark } = useTheme();
 
-    // WebRTC configuration
-    const pcConfig = {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-    };
+    // Initialize PeerJS
+    useEffect(() => {
+        if (!username) return;
 
-    // Listen for call updates
+        console.log('Initializing PeerJS with ID:', username);
+        
+        // PeerJS configuration
+        const peerInstance = new Peer(username, {
+            debug: 3,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        });
+
+        peerInstance.on('open', (id) => {
+            console.log('✅ PeerJS connected with ID:', id);
+            setPeer(peerInstance);
+        });
+
+        // Listen for incoming calls
+        peerInstance.on('call', async (call) => {
+            console.log('📞 Incoming call from:', call.peer);
+            
+            try {
+                // Get microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    },
+                    video: false 
+                });
+                
+                console.log('🎤 Local stream obtained');
+                setLocalStream(stream);
+                
+                // Setup local audio
+                if (localAudioRef.current) {
+                    localAudioRef.current.srcObject = stream;
+                    localAudioRef.current.muted = true; // Mute local audio to avoid echo
+                }
+
+                // Answer the call
+                call.answer(stream);
+                setCurrentCall(call);
+                
+                // Handle remote stream
+                call.on('stream', (remoteStream) => {
+                    console.log('🔊 Remote stream received');
+                    setRemoteStream(remoteStream);
+                    
+                    if (remoteAudioRef.current) {
+                        remoteAudioRef.current.srcObject = remoteStream;
+                        remoteAudioRef.current.play()
+                            .then(() => console.log('▶️ Remote audio playing'))
+                            .catch(err => console.error('❌ Remote audio play failed:', err));
+                    }
+                });
+
+                call.on('close', () => {
+                    console.log('📞 Call closed by remote');
+                    handleEndCall();
+                });
+
+                call.on('error', (err) => {
+                    console.error('❌ Call error:', err);
+                    toast.error('Call connection error');
+                });
+
+            } catch (err) {
+                console.error('❌ Error getting microphone:', err);
+                toast.error('Microphone access denied');
+                handleEndCall();
+            }
+        });
+
+        peerInstance.on('error', (err) => {
+            console.error('❌ PeerJS error:', err);
+            toast.error('Connection error: ' + err.message);
+        });
+
+        return () => {
+            if (peerInstance && !peerInstance.destroyed) {
+                console.log('🧹 Cleaning up PeerJS instance');
+                peerInstance.destroy();
+            }
+        };
+    }, [username]);
+
+    // Listen for Firebase call signals
     useEffect(() => {
         if (!username) return;
 
         const callRef = ref(db, `calls/${username}`);
         callRefRef.current = callRef;
         
+        console.log('👂 Listening for call updates...');
+        
         const unsub = onValue(callRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                setCallData(data);
-                console.log('Call data received:', data);
+                console.log('📨 Call data received:', data);
                 
                 // Handle incoming call
-                if (data.status === 'ringing' && data.from !== username && !callState.isActiveCall && !callState.isOutgoingCall) {
-                    console.log('Incoming call from:', data.from);
+                if (data.status === 'ringing' && data.from !== username && !callState.isActiveCall) {
+                    console.log('🔄 Setting incoming call state');
                     setCallState({ 
                         isIncomingCall: true, 
                         isOutgoingCall: false, 
                         isActiveCall: false, 
                         callWith: data.from, 
-                        callType: data.type || 'audio', 
+                        callType: 'audio', 
                         callId: data.callId 
                     });
                 }
                 
-                // Handle call acceptance for outgoing calls
-                if (data.status === 'accepted' && callState.isOutgoingCall && callState.callWith === data.from) {
-                    console.log('Call accepted by:', data.from);
+                // Handle call acceptance
+                if (data.status === 'accepted' && callState.isOutgoingCall) {
+                    console.log('✅ Call accepted by remote');
                     setCallState(prev => ({ 
                         ...prev, 
                         isIncomingCall: false, 
                         isOutgoingCall: false, 
                         isActiveCall: true 
                     }));
-                    toast.success('Call accepted!');
+                    toast.success('Call connected!');
                 }
                 
                 // Handle call rejection
-                if (data.status === 'rejected' && callState.isOutgoingCall && callState.callWith === data.from) {
-                    console.log('Call rejected by:', data.from);
+                if (data.status === 'rejected' && callState.isOutgoingCall) {
+                    console.log('❌ Call rejected by remote');
                     toast.error('Call rejected');
-                    cleanupCall();
-                    onCallEnd();
+                    handleEndCall();
                 }
                 
-                // Handle call ended by remote user
-                if (data.status === 'ended' && (callState.isActiveCall || callState.isOutgoingCall || callState.isIncomingCall)) {
-                    console.log('Call ended by remote user');
-                    toast.info('Call ended by other user');
-                    cleanupCall();
-                    onCallEnd();
-                }
-
-                // Handle WebRTC offer for incoming calls
-                if (data.offer && callState.isIncomingCall && callState.isActiveCall && !peerConnection) {
-                    console.log('Received WebRTC offer');
-                    handleWebRTCOffer(data.offer);
-                }
-
-                // Handle WebRTC answer for outgoing calls
-                if (data.answer && callState.isOutgoingCall && callState.isActiveCall && peerConnection) {
-                    console.log('Received WebRTC answer');
-                    handleWebRTCAnswer(data.answer);
-                }
-
-                // Handle ICE candidates
-                if (data.iceCandidates && peerConnection) {
-                    console.log('Received ICE candidates');
-                    handleICECandidates(data.iceCandidates);
+                // Handle call ended
+                if (data.status === 'ended') {
+                    console.log('📞 Call ended by remote');
+                    handleEndCall();
                 }
             }
         });
@@ -108,34 +172,41 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                 off(callRefRef.current);
             }
         };
-    }, [username, callState, onCallEnd, peerConnection]);
+    }, [username, callState, onCallEnd]);
 
-    // Initialize call when active
+    // Handle outgoing call
+    useEffect(() => {
+        if (callState.isOutgoingCall && peer && callState.callWith && !currentCall) {
+            console.log('🟡 Starting outgoing call to:', callState.callWith);
+            makeCall();
+        }
+    }, [callState.isOutgoingCall, peer, callState.callWith, currentCall]);
+
+    // Handle call timers
     useEffect(() => {
         if (callState.isActiveCall) {
-            initializeWebRTC();
+            console.log('⏰ Starting call timer');
             startCallTimer();
         }
 
-        // Auto-reject timeout for incoming calls
+        // Auto timeouts
         if (callState.isIncomingCall && !callState.isActiveCall) {
             const timeout = setTimeout(() => {
                 if (callState.isIncomingCall) {
+                    console.log('⏰ Auto-rejecting call after 30s');
                     handleRejectCall();
                 }
             }, 30000);
-
             return () => clearTimeout(timeout);
         }
 
-        // Auto-cancel timeout for outgoing calls
         if (callState.isOutgoingCall && !callState.isActiveCall) {
             const timeout = setTimeout(() => {
                 if (callState.isOutgoingCall) {
+                    console.log('⏰ Auto-ending call after 30s');
                     handleEndCall();
                 }
             }, 30000);
-
             return () => clearTimeout(timeout);
         }
 
@@ -146,160 +217,74 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
         };
     }, [callState.isActiveCall, callState.isIncomingCall, callState.isOutgoingCall]);
 
-    const initializeWebRTC = async () => {
+    // Make outgoing call
+    const makeCall = async () => {
+        if (!peer || !callState.callWith) {
+            console.error('❌ Peer or callWith missing');
+            return;
+        }
+
         try {
-            // Get user media
+            console.log('🎤 Getting microphone access...');
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    autoGainControl: true,
-                    channelCount: 1
+                    autoGainControl: true
                 },
-                video: false
+                video: false 
             });
             
+            console.log('✅ Microphone access granted');
             setLocalStream(stream);
             
+            // Setup local audio
             if (localAudioRef.current) {
                 localAudioRef.current.srcObject = stream;
+                localAudioRef.current.muted = true; // Mute local audio
             }
 
-            // Create peer connection
-            const pc = new RTCPeerConnection(pcConfig);
-            setPeerConnection(pc);
+            console.log('📞 Making call to:', callState.callWith);
+            const call = peer.call(callState.callWith, stream);
+            setCurrentCall(call);
 
-            // Add local tracks to peer connection
-            stream.getTracks().forEach(track => {
-                pc.addTrack(track, stream);
-            });
-
-            // Handle incoming remote stream
-            pc.ontrack = (event) => {
-                console.log('Received remote stream');
-                const remoteStream = event.streams[0];
+            // Handle remote stream
+            call.on('stream', (remoteStream) => {
+                console.log('🔊 Remote stream received in outgoing call');
                 setRemoteStream(remoteStream);
+                
                 if (remoteAudioRef.current) {
                     remoteAudioRef.current.srcObject = remoteStream;
+                    remoteAudioRef.current.play()
+                        .then(() => console.log('▶️ Remote audio playing'))
+                        .catch(err => console.error('❌ Remote audio play failed:', err));
                 }
-            };
 
-            // Handle ICE candidates
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    console.log('Sending ICE candidate');
-                    sendICECandidate(event.candidate);
-                }
-            };
+                // Update call state
+                setCallState(prev => ({ 
+                    ...prev, 
+                    isIncomingCall: false, 
+                    isOutgoingCall: false, 
+                    isActiveCall: true 
+                }));
+            });
 
-            // Handle connection state changes
-            pc.onconnectionstatechange = () => {
-                console.log('Connection state:', pc.connectionState);
-                if (pc.connectionState === 'connected') {
-                    console.log('WebRTC connection established');
-                    toast.success('Call connected!');
-                } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-                    console.log('WebRTC connection failed');
-                    toast.error('Call connection failed');
-                    handleEndCall();
-                }
-            };
+            call.on('close', () => {
+                console.log('📞 Call closed by remote');
+                handleEndCall();
+            });
 
-            // Create and send offer for outgoing calls
-            if (callState.isOutgoingCall) {
-                console.log('Creating WebRTC offer');
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                await sendOffer(offer);
-            }
+            call.on('error', (err) => {
+                console.error('❌ Call error:', err);
+                toast.error('Call failed: ' + err.message);
+                handleEndCall();
+            });
 
         } catch (error) {
-            console.error('Error initializing WebRTC:', error);
-            toast.error('Failed to initialize call');
+            console.error('❌ Error making call:', error);
+            toast.error('Failed to access microphone');
             handleEndCall();
         }
-    };
-
-    const handleWebRTCOffer = async (offer) => {
-        if (!peerConnection) return;
-        
-        try {
-            console.log('Setting remote description from offer');
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-            
-            console.log('Creating answer');
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            
-            console.log('Sending answer');
-            await sendAnswer(answer);
-        } catch (error) {
-            console.error('Error handling WebRTC offer:', error);
-        }
-    };
-
-    const handleWebRTCAnswer = async (answer) => {
-        if (!peerConnection) return;
-        
-        try {
-            console.log('Setting remote description from answer');
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        } catch (error) {
-            console.error('Error handling WebRTC answer:', error);
-        }
-    };
-
-    const handleICECandidates = async (candidates) => {
-        if (!peerConnection) return;
-        
-        try {
-            for (const candidateId in candidates) {
-                const candidate = candidates[candidateId];
-                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-            }
-        } catch (error) {
-            console.error('Error adding ICE candidate:', error);
-        }
-    };
-
-    const sendOffer = async (offer) => {
-        if (!callState.callWith || !username) return;
-        
-        const callRef = ref(db, `calls/${callState.callWith}`);
-        await set(callRef, {
-            from: username,
-            to: callState.callWith,
-            type: 'audio',
-            status: 'ringing',
-            callId: callState.callId || `${username}_${callState.callWith}_${Date.now()}`,
-            offer: offer,
-            timestamp: Date.now()
-        });
-        console.log('WebRTC offer sent to:', callState.callWith);
-    };
-
-    const sendAnswer = async (answer) => {
-        if (!callState.callWith || !username) return;
-        
-        const callRef = ref(db, `calls/${callState.callWith}`);
-        await set(callRef, {
-            from: username,
-            to: callState.callWith,
-            status: 'accepted',
-            callId: callState.callId,
-            answer: answer,
-            timestamp: Date.now()
-        });
-        console.log('WebRTC answer sent to:', callState.callWith);
-    };
-
-    const sendICECandidate = async (candidate) => {
-        if (!callState.callWith || !username) return;
-        
-        const iceRef = ref(db, `calls/${callState.callWith}/iceCandidates`);
-        const newIceRef = push(iceRef);
-        await set(newIceRef, candidate.toJSON());
-        console.log('ICE candidate sent');
     };
 
     const startCallTimer = () => {
@@ -314,71 +299,89 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const cleanupCall = async () => {
-        console.log('Cleaning up call...');
+    const cleanupCall = () => {
+        console.log('🧹 Cleaning up call...');
         
         // Stop local stream
         if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+            localStream.getTracks().forEach(track => {
+                track.stop();
+                console.log('🛑 Stopped track:', track.kind);
+            });
             setLocalStream(null);
         }
 
-        // Close peer connection
-        if (peerConnection) {
-            peerConnection.close();
-            setPeerConnection(null);
+        // Close call
+        if (currentCall) {
+            currentCall.close();
+            setCurrentCall(null);
         }
 
         // Clear timer
         if (durationIntervalRef.current) {
             clearInterval(durationIntervalRef.current);
+            durationIntervalRef.current = null;
         }
 
-        // Reset remote stream
+        // Reset streams
         setRemoteStream(null);
         setCallDuration(0);
     };
 
     const handleEndCall = async () => {
-        console.log('Ending call...');
+        console.log('📞 Ending call...');
         
-        // Notify the other user that call ended
+        // Notify other user
         if (callState.callWith && username) {
-            const callRef = ref(db, `calls/${callState.callWith}`);
-            await set(callRef, {
-                from: username,
-                to: callState.callWith,
-                status: 'ended',
-                callId: callState.callId,
-                endedBy: username,
-                timestamp: Date.now()
-            });
+            try {
+                const callRef = ref(db, `calls/${callState.callWith}`);
+                await set(callRef, {
+                    from: username,
+                    to: callState.callWith,
+                    status: 'ended',
+                    callId: callState.callId,
+                    endedBy: username,
+                    timestamp: Date.now()
+                });
+                console.log('✅ Call end notification sent');
+            } catch (err) {
+                console.error('❌ Error sending end notification:', err);
+            }
         }
 
-        // Clean up current user's call data
-        const currentUserCallRef = ref(db, `calls/${username}`);
-        await remove(currentUserCallRef);
+        // Clean up local data
+        try {
+            const currentUserCallRef = ref(db, `calls/${username}`);
+            await remove(currentUserCallRef);
+            console.log('✅ Local call data cleaned');
+        } catch (err) {
+            console.error('❌ Error cleaning local call data:', err);
+        }
 
-        await cleanupCall();
+        cleanupCall();
         onCallEnd();
     };
 
     const handleAcceptCall = async () => {
-        console.log('Accepting call...');
+        console.log('✅ Accepting call...');
         
-        // Notify the caller that call was accepted
+        // Notify caller
         if (callState.callWith && username) {
-            const callRef = ref(db, `calls/${callState.callWith}`);
-            await set(callRef, {
-                from: username,
-                to: callState.callWith,
-                status: 'accepted',
-                callId: callState.callId,
-                timestamp: Date.now()
-            });
+            try {
+                const callRef = ref(db, `calls/${callState.callWith}`);
+                await set(callRef, {
+                    from: username,
+                    to: callState.callWith,
+                    status: 'accepted',
+                    callId: callState.callId,
+                    timestamp: Date.now()
+                });
+                console.log('✅ Call acceptance sent');
+            } catch (err) {
+                console.error('❌ Error sending acceptance:', err);
+            }
         }
 
-        // Set call as active immediately for better UX
         setCallState(prev => ({ 
             ...prev, 
             isIncomingCall: false, 
@@ -389,42 +392,35 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
     };
 
     const handleRejectCall = async () => {
-        console.log('Rejecting call...');
+        console.log('❌ Rejecting call...');
         
-        // Notify the caller that call was rejected
+        // Notify caller
         if (callState.callWith && username) {
-            const callRef = ref(db, `calls/${callState.callWith}`);
-            await set(callRef, {
-                from: username,
-                to: callState.callWith,
-                status: 'rejected',
-                callId: callState.callId,
-                timestamp: Date.now()
-            });
+            try {
+                const callRef = ref(db, `calls/${callState.callWith}`);
+                await set(callRef, {
+                    from: username,
+                    to: callState.callWith,
+                    status: 'rejected',
+                    callId: callState.callId,
+                    timestamp: Date.now()
+                });
+                console.log('✅ Call rejection sent');
+            } catch (err) {
+                console.error('❌ Error sending rejection:', err);
+            }
         }
 
-        // Clean up current user's call data
-        const currentUserCallRef = ref(db, `calls/${username}`);
-        await remove(currentUserCallRef);
+        // Clean up local data
+        try {
+            const currentUserCallRef = ref(db, `calls/${username}`);
+            await remove(currentUserCallRef);
+        } catch (err) {
+            console.error('❌ Error cleaning call data:', err);
+        }
 
-        await cleanupCall();
+        cleanupCall();
         onCallReject();
-    };
-
-    const toggleMute = () => {
-        if (localStream) {
-            localStream.getAudioTracks().forEach(track => {
-                track.enabled = !track.enabled;
-            });
-            setIsMuted(!isMuted);
-        }
-    };
-
-    const toggleSpeaker = () => {
-        if (remoteAudioRef.current) {
-            remoteAudioRef.current.muted = !remoteAudioRef.current.muted;
-            setIsSpeakerOn(!isSpeakerOn);
-        }
     };
 
     const getProfilePhoto = (username) => {
@@ -472,43 +468,6 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                     </p>
                 </div>
 
-                {/* Call Controls - Only show during active call */}
-                {(callState.isActiveCall) && (
-                    <div className="flex justify-center space-x-6 mb-6">
-                        {/* Mute/Unmute Button */}
-                        <button
-                            onClick={toggleMute}
-                            className={`p-4 rounded-full ${
-                                isMuted 
-                                    ? 'bg-red-500 hover:bg-red-600' 
-                                    : 'bg-gray-600 hover:bg-gray-700'
-                            } transition-colors`}
-                        >
-                            {isMuted ? (
-                                <FaMicrophoneSlash className="text-white text-xl" />
-                            ) : (
-                                <FaMicrophone className="text-white text-xl" />
-                            )}
-                        </button>
-
-                        {/* Speaker Button */}
-                        <button
-                            onClick={toggleSpeaker}
-                            className={`p-4 rounded-full ${
-                                !isSpeakerOn 
-                                    ? 'bg-yellow-500 hover:bg-yellow-600' 
-                                    : 'bg-gray-600 hover:bg-gray-700'
-                            } transition-colors`}
-                        >
-                            {isSpeakerOn ? (
-                                <FaVolumeUp className="text-white text-xl" />
-                            ) : (
-                                <FaVolumeMute className="text-white text-xl" />
-                            )}
-                        </button>
-                    </div>
-                )}
-
                 {/* Call Action Buttons */}
                 <div className="flex justify-center space-x-6">
                     {callState.isIncomingCall && !callState.isActiveCall ? (
@@ -541,12 +500,15 @@ export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallRe
                 </div>
 
                 {/* Hidden audio elements */}
-                <audio ref={localAudioRef} muted className="hidden" />
+                <audio 
+                    ref={localAudioRef} 
+                    muted 
+                    className="hidden" 
+                />
                 <audio 
                     ref={remoteAudioRef} 
                     autoPlay 
-                    className="hidden" 
-                    muted={!isSpeakerOn}
+                    className="hidden"
                 />
             </div>
         </div>
