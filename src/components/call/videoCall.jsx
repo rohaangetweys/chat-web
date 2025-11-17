@@ -15,6 +15,7 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
     const [callDuration, setCallDuration] = useState(0);
     const [peer, setPeer] = useState(null);
     const [currentCall, setCurrentCall] = useState(null);
+    const [incomingPeerCall, setIncomingPeerCall] = useState(null);
     const [isVideoOn, setIsVideoOn] = useState(true);
     const [isAudioOn, setIsAudioOn] = useState(true);
     const [isCallConnected, setIsCallConnected] = useState(false);
@@ -86,14 +87,14 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
             config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
         });
         peerInstance.on('open', () => setPeer(peerInstance));
+        
         peerInstance.on('call', async (call) => {
-            const stream = await getMediaStream();
-            if (stream) {
-                call.answer(stream);
-                setCurrentCall(call);
-                handleCallStream(call);
-            }
+            console.log('PeerJS incoming video call detected from:', call.peer);
+            
+            setIncomingPeerCall(call);
+            
         });
+        
         peerInstance.on('error', (err) => toast.error('Connection error: ' + err.message));
         return () => { if (peerInstance && !peerInstance.destroyed) peerInstance.destroy(); };
     }, [username]);
@@ -151,6 +152,93 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
         }
     };
 
+    const handleAcceptCall = async () => {
+        if (!incomingPeerCall) {
+            toast.error('No incoming video call to accept');
+            return;
+        }
+
+        const stream = await getMediaStream();
+        if (stream) {
+            incomingPeerCall.answer(stream);
+            setCurrentCall(incomingPeerCall);
+            handleCallStream(incomingPeerCall);
+            setIncomingPeerCall(null);
+        }
+
+        if (callState.callWith && username) {
+            try {
+                await set(ref(db, `calls/${callState.callWith}`), { 
+                    from: username, 
+                    to: callState.callWith, 
+                    status: 'accepted', 
+                    callId: callState.callId, 
+                    timestamp: Date.now() 
+                });
+            } catch (err) {
+                console.error('Error updating video call status:', err);
+            }
+        }
+
+        setCallState(prev => ({ ...prev, isIncomingCall: false, isActiveCall: true }));
+        onCallAccept();
+    };
+
+    const handleRejectCall = async () => {
+        if (incomingPeerCall) {
+            incomingPeerCall.close();
+            setIncomingPeerCall(null);
+        }
+
+        if (callState.callWith && username) {
+            try {
+                await set(ref(db, `calls/${callState.callWith}`), { 
+                    from: username, 
+                    to: callState.callWith, 
+                    status: 'rejected', 
+                    callId: callState.callId, 
+                    timestamp: Date.now() 
+                });
+            } catch (err) {
+                console.error('Error updating video call status:', err);
+            }
+        }
+
+        try {
+            await remove(ref(db, `calls/${username}`));
+        } catch (err) {
+            console.error('Error removing video call data:', err);
+        }
+
+        cleanupCall(localStream, setLocalStream, currentCall, setCurrentCall, durationIntervalRef, setRemoteStream, setCallDuration, setIsVideoOn, setIsAudioOn, setIsCallConnected);
+        onCallReject();
+    };
+
+    const handleEndCall = async () => {
+        if (incomingPeerCall) {
+            incomingPeerCall.close();
+            setIncomingPeerCall(null);
+        }
+
+        if (callState.callWith && username) {
+            try {
+                await set(ref(db, `calls/${callState.callWith}`), { 
+                    from: username, 
+                    to: callState.callWith, 
+                    status: 'ended', 
+                    callId: callState.callId, 
+                    endedBy: username, 
+                    timestamp: Date.now() 
+                });
+            } catch (err) { }
+        }
+        try {
+            await remove(ref(db, `calls/${username}`));
+        } catch (err) { }
+        cleanupCall(localStream, setLocalStream, currentCall, setCurrentCall, durationIntervalRef, setRemoteStream, setCallDuration, setIsVideoOn, setIsAudioOn, setIsCallConnected);
+        onCallEnd();
+    };
+
     const toggleVideo = () => {
         if (localStream) {
             const videoTracks = localStream.getVideoTracks();
@@ -171,42 +259,6 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
                 toast.info(isAudioOn ? 'Microphone muted' : 'Microphone unmuted');
             } else toast.error('No audio track found');
         }
-    };
-
-    const handleEndCall = async () => {
-        if (callState.callWith && username) {
-            try {
-                await set(ref(db, `calls/${callState.callWith}`), { from: username, to: callState.callWith, status: 'ended', callId: callState.callId, endedBy: username, timestamp: Date.now() });
-            } catch (err) { }
-        }
-        try {
-            await remove(ref(db, `calls/${username}`));
-        } catch (err) { }
-        cleanupCall(localStream, setLocalStream, currentCall, setCurrentCall, durationIntervalRef, setRemoteStream, setCallDuration, setIsVideoOn, setIsAudioOn, setIsCallConnected);
-        onCallEnd();
-    };
-
-    const handleAcceptCall = async () => {
-        if (callState.callWith && username) {
-            try {
-                await set(ref(db, `calls/${callState.callWith}`), { from: username, to: callState.callWith, status: 'accepted', callId: callState.callId, timestamp: Date.now() });
-            } catch (err) { }
-        }
-        setCallState(prev => ({ ...prev, isIncomingCall: false, isActiveCall: true }));
-        onCallAccept();
-    };
-
-    const handleRejectCall = async () => {
-        if (callState.callWith && username) {
-            try {
-                await set(ref(db, `calls/${callState.callWith}`), { from: username, to: callState.callWith, status: 'rejected', callId: callState.callId, timestamp: Date.now() });
-            } catch (err) { }
-        }
-        try {
-            await remove(ref(db, `calls/${username}`));
-        } catch (err) { }
-        cleanupCall(localStream, setLocalStream, currentCall, setCurrentCall, durationIntervalRef, setRemoteStream, setCallDuration, setIsVideoOn, setIsAudioOn, setIsCallConnected);
-        onCallReject();
     };
 
     return (
@@ -242,7 +294,10 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-white text-lg">{callState.isActiveCall ? 'Connecting video...' : 'Waiting for call...'}</p>
+                                <p className="text-white text-lg">
+                                    {callState.isIncomingCall ? 'Incoming video call...' : 
+                                     callState.isActiveCall ? 'Connecting video...' : 'Waiting for call...'}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -256,8 +311,12 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
                 <div className="p-6 flex justify-center items-center gap-6">
                     {callState.isIncomingCall && !callState.isActiveCall ? (
                         <>
-                            <button onClick={handleAcceptCall} className="p-4 bg-green-500 hover:bg-green-600 rounded-full transition-colors shadow-lg"><FaVideo className="text-white text-xl" /></button>
-                            <button onClick={handleRejectCall} className="p-4 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg"><FaPhoneSlash className="text-white text-xl" /></button>
+                            <button onClick={handleAcceptCall} className="p-4 bg-green-500 hover:bg-green-600 rounded-full transition-colors shadow-lg">
+                                <FaVideo className="text-white text-xl" />
+                            </button>
+                            <button onClick={handleRejectCall} className="p-4 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg">
+                                <FaPhoneSlash className="text-white text-xl" />
+                            </button>
                         </>
                     ) : callState.isActiveCall ? (
                         <>
@@ -267,10 +326,14 @@ export default function VideoCall({ callState, onCallEnd, onCallAccept, onCallRe
                             <button onClick={toggleAudio} className={`p-4 rounded-full transition-colors shadow-lg ${isAudioOn ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-500 hover:bg-red-600'}`}>
                                 {isAudioOn ? <FaMicrophone className="text-white text-xl" /> : <FaMicrophoneSlash className="text-white text-xl" />}
                             </button>
-                            <button onClick={handleEndCall} className="p-4 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg"><FaPhoneSlash className="text-white text-xl" /></button>
+                            <button onClick={handleEndCall} className="p-4 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg">
+                                <FaPhoneSlash className="text-white text-xl" />
+                            </button>
                         </>
                     ) : (
-                        <button onClick={handleEndCall} className="p-4 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg"><FaPhoneSlash className="text-white text-xl" /></button>
+                        <button onClick={handleEndCall} className="p-4 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg">
+                            <FaPhoneSlash className="text-white text-xl" />
+                        </button>
                     )}
                 </div>
             </div>
