@@ -93,7 +93,7 @@ export default function MessageList({ chat, username, getProfilePhoto, onOpenMed
                                     >
                                         <div className="shrink-0">{getFileIcon(msg.fileName, msg.format)}</div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">{msg.fileName || 'Document'}</p>
+                                            <p className="text-sm font-medium truncate text-black">{msg.fileName || 'Document'}</p>
                                             <p className="text-xs text-gray-500">
                                                 {getFileTypeName(msg.fileName, msg.format)}
                                             </p>

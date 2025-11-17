@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Sidebar from '@/components/sidebar/Sidebar';
 import ChatArea from '@/components/chatArea/ChatArea';
 import AppHeader from '@/components/AppHeader';
-import ModalsManager from '@/components/chatArea/ModalsManager';
+import MediaModal from '@/components/MediaModal';
 import useAuth from '@/hooks/useAuth';
 import useProfiles from '@/hooks/useProfiles';
 import useGroups from '@/hooks/useGroups';
@@ -148,56 +148,23 @@ export default function ChatPage() {
                 </div>
 
                 <div className={`rounded-t-3xl overflow-hidden ${isMobileView ? (showSidebar ? 'hidden' : 'flex') : 'flex'} flex-1 flex-col ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <ChatArea
-                        fileInputRef={fileInputRef}
-                        activeUser={activeUser}
-                        chat={chat}
-                        uploading={uploading}
-                        username={username}
-                        onOpenMedia={openMediaModal}
-                        activeChatType={activeChatType}
-                        onPaperClipClick={handlePaperClipClick}
-                        onSendMessage={sendMessage}
-                        userProfiles={userProfiles}
-                        onlineStatus={onlineStatus}
-                        groups={groups}
-                        isMobileView={isMobileView}
-                        onBackToSidebar={handleBackToSidebar}
-                        onStartVoiceCall={startVoiceCall}
-                        onStartVideoCall={startVideoCall}
-                        onClearChat={handleClearChat}
-                        blockedUsers={blockedUsers}
-                        onBlockUser={handleBlockUser}
-                        onUnblockUser={handleUnblockUser}
+                    <ChatArea fileInputRef={fileInputRef} activeUser={activeUser} chat={chat} uploading={uploading} username={username} onOpenMedia={openMediaModal} activeChatType={activeChatType} onPaperClipClick={handlePaperClipClick} onSendMessage={sendMessage} userProfiles={userProfiles} onlineStatus={onlineStatus} groups={groups} isMobileView={isMobileView} onBackToSidebar={handleBackToSidebar} onStartVoiceCall={startVoiceCall} onStartVideoCall={startVideoCall} onClearChat={handleClearChat} blockedUsers={blockedUsers} onBlockUser={handleBlockUser} onUnblockUser={handleUnblockUser} />
+
+                    <MediaModal
+                        isOpen={!!modalContent}
+                        onClose={closeMediaModal}
+                        content={modalContent}
+                        type={modalType}
                     />
-                    <ModalsManager modalContent={modalContent} modalType={modalType} closeMediaModal={closeMediaModal} />
                 </div>
             </div>
 
-            {/* Audio Call */}
             {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && callState.callType === 'audio' && (
-                <AudioCall
-                    callState={callState}
-                    onCallEnd={handleCallEnd}
-                    onCallAccept={handleCallAccept}
-                    onCallReject={handleCallReject}
-                    username={username}
-                    userProfiles={userProfiles}
-                    setCallState={setCallState}
-                />
+                <AudioCall callState={callState} onCallEnd={handleCallEnd} onCallAccept={handleCallAccept} onCallReject={handleCallReject} username={username} userProfiles={userProfiles} setCallState={setCallState} />
             )}
 
-            {/* Video Call */}
             {(callState.isOutgoingCall || callState.isIncomingCall || callState.isActiveCall) && callState.callType === 'video' && (
-                <VideoCall
-                    callState={callState}
-                    onCallEnd={handleCallEnd}
-                    onCallAccept={handleCallAccept}
-                    onCallReject={handleCallReject}
-                    username={username}
-                    userProfiles={userProfiles}
-                    setCallState={setCallState}
-                />
+                <VideoCall callState={callState} onCallEnd={handleCallEnd} onCallAccept={handleCallAccept} onCallReject={handleCallReject} username={username} userProfiles={userProfiles} setCallState={setCallState} />
             )}
         </div>
     );

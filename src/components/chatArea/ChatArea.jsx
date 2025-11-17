@@ -8,28 +8,7 @@ import { HiOutlineUserGroup } from 'react-icons/hi2';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function ChatArea({ 
-    activeUser, 
-    chat = [], 
-    username, 
-    uploading, 
-    fileInputRef, 
-    onOpenMedia, 
-    activeChatType, 
-    onPaperClipClick, 
-    onSendMessage, 
-    userProfiles, 
-    onlineStatus, 
-    groups, 
-    isMobileView, 
-    onBackToSidebar, 
-    onStartVoiceCall,
-    onStartVideoCall,
-    onClearChat, 
-    blockedUsers, 
-    onBlockUser, 
-    onUnblockUser 
-}) {
+export default function ChatArea({ activeUser, chat = [], username, uploading, fileInputRef, onOpenMedia, activeChatType, onPaperClipClick, onSendMessage, userProfiles, onlineStatus, groups, isMobileView, onBackToSidebar, onStartVoiceCall, onStartVideoCall, onClearChat, blockedUsers, onBlockUser, onUnblockUser }) {
     const [message, setMessage] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [recordingComplete, setRecordingComplete] = useState(false);
@@ -246,7 +225,7 @@ export default function ChatArea({
                                 >
                                     <FaPhone size={14} />
                                 </button>
-                                
+
                                 <button
                                     onClick={onStartVideoCall}
                                     className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}

@@ -1,46 +1,15 @@
 'use client';
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { ref, onValue, push, set, serverTimestamp, off, remove, update, get } from 'firebase/database';
+import { useEffect, useRef, useCallback } from 'react';
+import { ref, push, set, serverTimestamp, remove, onValue, off } from 'firebase/database';
 import { toast } from 'react-hot-toast';
 import { db } from '@/lib/firebaseConfig';
+import useChatStateAndListeners from './useChatStateAndListeners';
 
 export default function useChatHandlers({ username, users, groups, setShowSidebar, callState, setCallState }) {
-    const [activeUser, setActiveUser] = useState('');
-    const [activeChatType, setActiveChatType] = useState('individual');
-    const [chat, setChat] = useState([]);
-    const [uploading, setUploading] = useState(false);
-    const [modalContent, setModalContent] = useState(null);
-    const [modalType, setModalType] = useState(null);
-    const [isMobileView, setIsMobileView] = useState(false);
-    const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
-    const [showFileTypeModal, setShowFileTypeModal] = useState(false);
-    const [unreadCounts, setUnreadCounts] = useState({});
-    const [blockedUsers, setBlockedUsers] = useState([]);
-    const [clearedChats, setClearedChats] = useState({});
+    const { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, setChat, uploading, setUploading, modalContent, modalType, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, unreadCounts, setUnreadCounts, blockedUsers, setBlockedUsers, clearedChats, setClearedChats, fileInputRef, openMediaModal, closeMediaModal, setActiveUserHandler, markMessagesAsRead } = useChatStateAndListeners({ username, users, groups, setShowSidebar });
 
-    const fileInputRef = useRef(null);
     const callRefRef = useRef(null);
 
-    useEffect(() => {
-        const checkMobile = () => {
-            const mobile = window.innerWidth <= 768;
-            setIsMobileView(mobile);
-            if (mobile && activeUser) {
-                if (setShowSidebar) {
-                    setShowSidebar(false);
-                }
-            } else {
-                if (setShowSidebar) {
-                    setShowSidebar(true);
-                }
-            }
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, [activeUser, setShowSidebar]);
-
-    // Call invitation function
     const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
         if (!username || !toUser) return;
 
@@ -48,19 +17,18 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             const callId = `${username}_${toUser}_${Date.now()}`;
             const callRef = ref(db, `calls/${toUser}`);
 
-            await set(callRef, { 
-                from: username, 
-                to: toUser, 
-                type: type, // 'audio' or 'video'
-                status: 'ringing', 
-                callId: callId, 
-                timestamp: Date.now() 
+            await set(callRef, {
+                from: username,
+                to: toUser,
+                type: type,
+                status: 'ringing',
+                callId: callId,
+                timestamp: Date.now()
             });
 
-            // Also set call state with callId
-            setCallState(prev => ({ 
-                ...prev, 
-                callId: callId 
+            setCallState(prev => ({
+                ...prev,
+                callId: callId
             }));
 
             console.log(`${type} call invitation sent to:`, toUser, 'with ID:', callId);
@@ -71,7 +39,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     }, [username, setCallState]);
 
-    // Auto-send call invitation when outgoing call state is set
     useEffect(() => {
         if (callState.isOutgoingCall && callState.callWith && !callState.callId) {
             console.log('Sending call invitation to:', callState.callWith, 'type:', callState.callType);
@@ -79,75 +46,68 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     }, [callState.isOutgoingCall, callState.callWith, callState.callType, callState.callId, sendCallInvitation]);
 
-    // Enhanced call listener
     useEffect(() => {
         if (!username) return;
 
         const callsRef = ref(db, `calls/${username}`);
         callRefRef.current = callsRef;
-        
+
         const unsub = onValue(callsRef, (snapshot) => {
             if (snapshot.exists()) {
                 const callData = snapshot.val();
                 console.log('Call data received:', callData);
 
-                // Handle incoming call
                 if (callData.status === 'ringing' && callData.from !== username && !callState.isActiveCall && !callState.isOutgoingCall) {
                     console.log('Incoming call from:', callData.from);
-                    setCallState({ 
-                        isIncomingCall: true, 
-                        isOutgoingCall: false, 
-                        isActiveCall: false, 
-                        callWith: callData.from, 
-                        callType: callData.type || 'audio', 
-                        callId: callData.callId 
+                    setCallState({
+                        isIncomingCall: true,
+                        isOutgoingCall: false,
+                        isActiveCall: false,
+                        callWith: callData.from,
+                        callType: callData.type || 'audio',
+                        callId: callData.callId
                     });
                 }
 
-                // Handle call acceptance for outgoing calls
                 if (callData.status === 'accepted' && callState.isOutgoingCall && callState.callWith === callData.to) {
                     console.log('Call accepted by:', callData.to);
-                    setCallState(prev => ({ 
-                        ...prev, 
-                        isIncomingCall: false, 
-                        isOutgoingCall: false, 
-                        isActiveCall: true 
+                    setCallState(prev => ({
+                        ...prev,
+                        isIncomingCall: false,
+                        isOutgoingCall: false,
+                        isActiveCall: true
                     }));
                     toast.success('Call accepted!');
                 }
 
-                // Handle call rejection
                 if (callData.status === 'rejected' && callState.isOutgoingCall && callState.callWith === callData.to) {
                     console.log('Call rejected by:', callData.to);
-                    setCallState({ 
-                        isIncomingCall: false, 
-                        isOutgoingCall: false, 
-                        isActiveCall: false, 
-                        callWith: null, 
-                        callType: 'audio', 
-                        callId: null 
+                    setCallState({
+                        isIncomingCall: false,
+                        isOutgoingCall: false,
+                        isActiveCall: false,
+                        callWith: null,
+                        callType: 'audio',
+                        callId: null
                     });
                     toast.error('Call rejected');
-                    
-                    // Clean up call data
+
                     const currentUserCallRef = ref(db, `calls/${username}`);
                     remove(currentUserCallRef);
                 }
 
-                // Handle call ended by remote user
                 if (callData.status === 'ended' && (callState.isActiveCall || callState.isOutgoingCall || callState.isIncomingCall)) {
                     console.log('Call ended by remote user');
-                    setCallState({ 
-                        isIncomingCall: false, 
-                        isOutgoingCall: false, 
-                        isActiveCall: false, 
-                        callWith: null, 
-                        callType: 'audio', 
-                        callId: null 
+                    setCallState({
+                        isIncomingCall: false,
+                        isOutgoingCall: false,
+                        isActiveCall: false,
+                        callWith: null,
+                        callType: 'audio',
+                        callId: null
                     });
 
-                    
-                    // Clean up call data
+
                     const currentUserCallRef = ref(db, `calls/${username}`);
                     remove(currentUserCallRef);
                 }
@@ -163,18 +123,17 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         };
     }, [username, callState, setCallState]);
 
-    // Enhanced call response function
     const sendCallResponse = useCallback(async (toUser, response, callId) => {
         if (!username || !toUser || !callId) return;
 
         try {
             const callRef = ref(db, `calls/${toUser}`);
-            await set(callRef, { 
-                from: username, 
-                to: toUser, 
-                status: response, 
-                callId: callId, 
-                timestamp: Date.now() 
+            await set(callRef, {
+                from: username,
+                to: toUser,
+                status: response,
+                callId: callId,
+                timestamp: Date.now()
             });
             console.log('Call response sent:', response, 'to:', toUser);
         } catch (error) {
@@ -183,19 +142,18 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     }, [username]);
 
-    // Enhanced call end function
     const endCallForBoth = useCallback(async (callWith, callId) => {
         if (!username || !callWith || !callId) return;
 
         try {
             const otherUserCallRef = ref(db, `calls/${callWith}`);
-            await set(otherUserCallRef, { 
-                from: username, 
-                to: callWith, 
-                status: 'ended', 
-                callId: callId, 
-                endedBy: username, 
-                timestamp: Date.now() 
+            await set(otherUserCallRef, {
+                from: username,
+                to: callWith,
+                status: 'ended',
+                callId: callId,
+                endedBy: username,
+                timestamp: Date.now()
             });
 
             const currentUserCallRef = ref(db, `calls/${username}`);
@@ -206,194 +164,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             console.error('Error ending call:', error);
         }
     }, [username]);
-
-    useEffect(() => {
-        if (!username) return;
-
-        const blockedUsersRef = ref(db, `blockedUsers/${username}`);
-        const unsub = onValue(blockedUsersRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const blockedList = [];
-                snapshot.forEach((child) => {
-                    blockedList.push(child.key);
-                });
-                setBlockedUsers(blockedList);
-            } else {
-                setBlockedUsers([]);
-            }
-        });
-
-        return () => unsub();
-    }, [username]);
-
-    useEffect(() => {
-        if (!username) return;
-
-        const clearedChatsRef = ref(db, `clearedChats/${username}`);
-        const unsub = onValue(clearedChatsRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const clearedData = {};
-                snapshot.forEach((child) => {
-                    clearedData[child.key] = child.val();
-                });
-                setClearedChats(clearedData);
-            } else {
-                setClearedChats({});
-            }
-        });
-
-        return () => unsub();
-    }, [username]);
-
-    useEffect(() => {
-        if (!activeUser || !username) {
-            setChat([]);
-            return;
-        }
-
-        if (activeChatType === 'individual' && blockedUsers.includes(activeUser)) {
-            setChat([]);
-            return;
-        }
-
-        let chatRef;
-        if (activeChatType === 'individual') {
-            const chatId = username < activeUser ? `${username}_${activeUser}` : `${activeUser}_${username}`;
-            chatRef = ref(db, `chats/${chatId}`);
-        } else {
-            chatRef = ref(db, `groupChats/${activeUser}/messages`);
-        }
-
-        const unsub = onValue(chatRef, (snapshot) => {
-            if (!snapshot.exists()) {
-                setChat([]);
-                return;
-            }
-
-            const msgs = [];
-            const clearedKey = activeChatType === 'individual' ? activeUser : `group_${activeUser}`;
-            const clearTimestamp = clearedChats[clearedKey] || 0;
-
-            snapshot.forEach((child) => {
-                const msgData = child.val();
-                if (msgData.timestamp > clearTimestamp) {
-                    msgs.push({ id: child.key, ...msgData });
-                }
-            });
-
-            msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            setChat(msgs);
-
-            markMessagesAsRead(activeUser, activeChatType);
-        }, (error) => {
-            console.error('Error in chat listener:', error);
-        });
-
-        return () => {
-            unsub();
-        };
-    }, [activeUser, username, activeChatType, blockedUsers, clearedChats]);
-
-    useEffect(() => {
-        if (!username) return;
-
-        const unsubscribeFunctions = [];
-
-        const initialUnreadCounts = {};
-        users?.forEach(user => {
-            if (user !== username && !blockedUsers.includes(user)) initialUnreadCounts[user] = 0;
-        });
-        groups?.forEach(group => {
-            const gid = typeof group === 'string' ? group : group?.id;
-            if (gid) initialUnreadCounts[gid] = 0;
-        });
-        setUnreadCounts(initialUnreadCounts);
-
-        users?.forEach((user) => {
-            if (user === username || blockedUsers.includes(user)) return;
-
-            const chatId = username < user ? `${username}_${user}` : `${user}_${username}`;
-            const chatRef = ref(db, `chats/${chatId}`);
-
-            const unsubscribe = onValue(chatRef, (snapshot) => {
-                if (!snapshot.exists()) {
-                    setUnreadCounts(prev => ({ ...prev, [user]: 0 }));
-                    return;
-                }
-
-                const messages = [];
-                const clearedTimestamp = clearedChats[user] || 0;
-
-                snapshot.forEach(child => {
-                    const msgData = child.val();
-                    if (msgData.timestamp > clearedTimestamp) {
-                        messages.push({ id: child.key, ...msgData, timestamp: msgData.timestamp ?? 0 });
-                    }
-                });
-
-                messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
-                const lastReadKey = `lastRead_${username}_${user}`;
-                const lastRead = Number(localStorage.getItem(lastReadKey) || 0);
-
-                const unread = messages.filter(msg =>
-                    (msg.timestamp || 0) > lastRead &&
-                    msg.username !== username
-                ).length;
-
-                setUnreadCounts(prev => ({ ...prev, [user]: unread }));
-            }, (error) => {
-                console.error(`Error listening to chat with ${user}:`, error);
-            });
-
-            unsubscribeFunctions.push(unsubscribe);
-        });
-
-        groups?.forEach((group) => {
-            const groupId = typeof group === 'string' ? group : group?.id;
-            if (!groupId) return;
-
-            const messagesRef = ref(db, `groupChats/${groupId}/messages`);
-
-            const unsubscribe = onValue(messagesRef, (snapshot) => {
-                if (!snapshot.exists()) {
-                    setUnreadCounts(prev => ({ ...prev, [groupId]: 0 }));
-                    return;
-                }
-
-                const messages = [];
-                const clearedTimestamp = clearedChats[`group_${groupId}`] || 0;
-
-                snapshot.forEach((child) => {
-                    const msgData = child.val();
-                    if (msgData.timestamp > clearedTimestamp) {
-                        messages.push({ id: child.key, ...msgData, timestamp: msgData.timestamp ?? 0 });
-                    }
-                });
-
-                messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
-                const lastReadKey = `lastRead_${username}_${groupId}`;
-                const lastRead = Number(localStorage.getItem(lastReadKey) || 0);
-
-                const unread = messages.filter(msg => {
-                    const isUnread = (msg.timestamp || 0) > lastRead;
-                    const isFromOthers = msg.username !== username;
-                    return isUnread && isFromOthers;
-                }).length;
-
-                setUnreadCounts(prev => ({ ...prev, [groupId]: unread }));
-            }, (error) => {
-                console.error(`Error listening to group ${groupId}:`, error);
-            });
-
-            unsubscribeFunctions.push(unsubscribe);
-        });
-
-        return () => {
-            unsubscribeFunctions.forEach(unsub => unsub && unsub());
-        };
-    }, [users, groups, username, blockedUsers, clearedChats]);
 
     const blockUser = async (userId) => {
         if (!username || !userId) {
@@ -455,17 +225,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             toast.error('Failed to clear chat');
         }
     };
-
-    const markMessagesAsRead = useCallback((target, type = 'individual') => {
-        if (!username || !target) return;
-
-        const lastReadKey = `lastRead_${username}_${target}`;
-        const currentTime = Date.now();
-
-        localStorage.setItem(lastReadKey, currentTime.toString());
-
-        setUnreadCounts(prev => ({ ...prev, [target]: 0 }));
-    }, [username]);
 
     const sendFileMessage = async ({ url, type, fileName, format, duration }) => {
         if (!activeUser || !username) return;
@@ -621,9 +380,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }
     };
 
-    const openMediaModal = (content, type) => { setModalContent(content); setModalType(type); };
-    const closeMediaModal = () => { setModalContent(null); setModalType(null); };
-
     const createGroupChat = async (groupName, selectedUsers) => {
         if (!groupName.trim() || selectedUsers.length === 0) {
             toast.error('Please enter a group name and select at least one user');
@@ -675,50 +431,5 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
         }, 1000);
     };
 
-    const setActiveUserHandler = (user, type = 'individual') => {
-        setActiveUser(user);
-        setActiveChatType(type);
-
-        markMessagesAsRead(user, type);
-
-        if (isMobileView && setShowSidebar) {
-            setShowSidebar(false);
-        }
-    };
-
-    return { 
-        activeUser, 
-        setActiveUser, 
-        activeChatType, 
-        setActiveChatType, 
-        chat, 
-        uploading, 
-        fileInputRef, 
-        isMobileView, 
-        showVoiceRecorder, 
-        setShowVoiceRecorder, 
-        showFileTypeModal, 
-        setShowFileTypeModal, 
-        unreadCounts, 
-        modalContent, 
-        modalType, 
-        openMediaModal, 
-        closeMediaModal, 
-        handleFileInputChange, 
-        handleVoiceRecordComplete, 
-        createGroupChat, 
-        sendMessage, 
-        uploadToCloudinary, 
-        handlePaperClipClick, 
-        handleFileTypeSelect, 
-        setActiveUserHandler, 
-        markMessagesAsRead, 
-        blockUser, 
-        unblockUser, 
-        blockedUsers, 
-        clearChat, 
-        sendCallResponse, 
-        endCallForBoth,
-        sendCallInvitation 
-    };
+    return { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, uploading, fileInputRef, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, unreadCounts, modalContent, modalType, openMediaModal, closeMediaModal, handleFileInputChange, handleVoiceRecordComplete, createGroupChat, sendMessage, uploadToCloudinary, handlePaperClipClick, handleFileTypeSelect, setActiveUserHandler, markMessagesAsRead, blockUser, unblockUser, blockedUsers, clearChat, sendCallResponse, endCallForBoth, sendCallInvitation };
 }
