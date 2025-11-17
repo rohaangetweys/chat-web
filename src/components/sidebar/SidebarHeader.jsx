@@ -40,7 +40,7 @@ export default function SidebarHeader({ username, getProfilePhoto, searchQuery, 
                         <button onClick={clearSearch} className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-700'} text-sm`}>✕</button>
                     )}
                 </div>
-                <button onClick={openGroupModal} className={`p-2 rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`} title="Create Group Chat">
+                <button onClick={openGroupModal} className={`p-2 cursor-pointer rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`} title="Create Group Chat">
                     <FaUsers size={20} />
                 </button>
             </div>
@@ -48,7 +48,7 @@ export default function SidebarHeader({ username, getProfilePhoto, searchQuery, 
             <div className={`flex px-3 gap-1 pb-1 border-b ${isDark ? 'border-gray-600' : 'border-gray-100'}`}>
                 <button
                     onClick={() => setActiveFilter('all')}
-                    className={`h-7 px-2 text-xs font-medium transition-colors rounded-full ${activeFilter === 'all'
+                    className={`h-7 px-2 text-xs font-medium cursor-pointer transition-colors rounded-full ${activeFilter === 'all'
                         ? 'bg-[#0084ff] text-white'
                         : isDark
                             ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
@@ -59,7 +59,7 @@ export default function SidebarHeader({ username, getProfilePhoto, searchQuery, 
                 </button>
                 <button
                     onClick={() => setActiveFilter('unread')}
-                    className={`h-7 px-2 rounded-full text-xs font-medium transition-colors relative ${activeFilter === 'unread'
+                    className={`h-7 px-2 rounded-full text-xs font-medium cursor-pointer transition-colors relative ${activeFilter === 'unread'
                         ? 'bg-[#0084ff] text-white'
                         : isDark
                             ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
@@ -75,7 +75,7 @@ export default function SidebarHeader({ username, getProfilePhoto, searchQuery, 
                 </button>
                 <button
                     onClick={() => setActiveFilter('groups')}
-                    className={`h-7 px-2 rounded-full text-xs font-medium transition-colors ${activeFilter === 'groups'
+                    className={`h-7 px-2 rounded-full text-xs font-medium cursor-pointer transition-colors ${activeFilter === 'groups'
                         ? 'bg-[#0084ff] text-white'
                         : isDark
                             ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
@@ -86,7 +86,7 @@ export default function SidebarHeader({ username, getProfilePhoto, searchQuery, 
                 </button>
                 <button
                     onClick={() => setActiveFilter('blocked')}
-                    className={`h-7 px-2 rounded-full text-xs font-medium transition-colors relative ${activeFilter === 'blocked'
+                    className={`h-7 px-2 rounded-full text-xs font-medium cursor-pointer transition-colors relative ${activeFilter === 'blocked'
                         ? 'bg-red-500 text-white'
                         : isDark
                             ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'

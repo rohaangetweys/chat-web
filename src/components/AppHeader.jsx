@@ -32,7 +32,7 @@ export default function AppHeader({ user, username, handleLogout }) {
             <div className="flex items-center gap-2">
                 <button
                     onClick={toggleTheme}
-                    className={`p-1.5 rounded-full transition-colors ${isDark
+                    className={`cursor-pointer p-1.5 rounded-full transition-colors ${isDark
                         ? 'text-yellow-400 hover:bg-gray-700'
                         : 'text-gray-600 hover:bg-gray-200'
                         }`}
@@ -48,7 +48,7 @@ export default function AppHeader({ user, username, handleLogout }) {
                 <div className="relative" ref={profileDropdownRef}>
                     <button
                         onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                        className={`p-1.5 rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                        className={`cursor-pointer p-1.5 rounded-full text-[#0084ff] ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
                             } transition-colors flex items-center gap-1.5`}
                     >
                         {user?.photoURL ? (
@@ -77,7 +77,7 @@ export default function AppHeader({ user, username, handleLogout }) {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className={`flex items-center w-full px-3 py-1.5 text-xs ${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                                className={`cursor-pointer flex items-center w-full px-3 py-1.5 text-xs ${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                                     } transition-colors`}
                             >
                                 <FaSignOutAlt className="mr-1.5 text-gray-500 text-xs" />

@@ -220,7 +220,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                             <>
                                 <button
                                     onClick={onStartVoiceCall}
-                                    className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+                                    className={`cursor-pointer p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
                                     title="Voice Call"
                                 >
                                     <FaPhone size={14} />
@@ -228,7 +228,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
 
                                 <button
                                     onClick={onStartVideoCall}
-                                    className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+                                    className={`cursor-pointer p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
                                     title="Video Call"
                                 >
                                     <FaVideo size={14} />
@@ -239,7 +239,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                         <div className="relative">
                             <button
                                 onClick={() => setShowOptions(!showOptions)}
-                                className={`p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+                                className={`cursor-pointer p-1.5 rounded-full ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
                             >
                                 <FaEllipsisV size={14} />
                             </button>
@@ -252,7 +252,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                                                 {!isUserBlocked ? (
                                                     <button
                                                         onClick={handleBlockUser}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-red-600 hover:bg-red-50 transition-colors"
+                                                        className="cursor-pointer w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-red-600 hover:bg-red-50 transition-colors"
                                                     >
                                                         <FaBan size={12} />
                                                         Block User
@@ -260,7 +260,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                                                 ) : (
                                                     <button
                                                         onClick={handleUnblockUser}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-green-600 hover:bg-green-50 transition-colors"
+                                                        className="cursor-pointer w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-green-600 hover:bg-green-50 transition-colors"
                                                     >
                                                         <FaBan size={12} />
                                                         Unblock User
@@ -271,7 +271,7 @@ export default function ChatArea({ activeUser, chat = [], username, uploading, f
                                         )}
                                         <button
                                             onClick={handleClearChat}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-red-600 hover:bg-red-50 transition-colors"
+                                            className="cursor-pointer w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-red-600 hover:bg-red-50 transition-colors"
                                         >
                                             <FaTrash size={12} />
                                             Clear Chat

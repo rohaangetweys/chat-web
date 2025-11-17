@@ -157,7 +157,7 @@ export default function ChatInput({ activeUser, uploading, fileInputRef, onPaper
                     <button
                         onClick={handlePaperClipClick}
                         disabled={!activeUser || uploading}
-                        className={`p-2 rounded-full transition-all ${!activeUser || uploading
+                        className={`cursor-pointer p-2 rounded-full transition-all ${!activeUser || uploading
                             ? 'text-gray-400 cursor-not-allowed'
                             : isDark
                                 ? `text-gray-400 hover:text-[#0084ff] hover:bg-gray-700 ${showFileDropdown ? 'bg-gray-700 text-[#0084ff]' : ''}`
@@ -185,7 +185,7 @@ export default function ChatInput({ activeUser, uploading, fileInputRef, onPaper
                                         <button
                                             key={option.type}
                                             onClick={() => handleFileTypeSelect(option.type)}
-                                            className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors text-left ${isDark
+                                            className={`cursor-pointer w-full flex items-center gap-2 p-2 rounded-md transition-colors text-left ${isDark
                                                 ? 'hover:bg-gray-700 text-gray-200'
                                                 : 'hover:bg-gray-50 text-gray-700'
                                                 }`}
@@ -225,7 +225,7 @@ export default function ChatInput({ activeUser, uploading, fileInputRef, onPaper
                 <button
                     onClick={onStartRecording}
                     disabled={!activeUser || uploading}
-                    className={`p-2 rounded-full transition-all ${!activeUser || uploading
+                    className={`cursor-pointer p-2 rounded-full transition-all ${!activeUser || uploading
                         ? 'text-gray-400 cursor-not-allowed'
                         : isDark
                             ? 'text-gray-400 hover:text-[#0084ff] hover:bg-gray-700'
@@ -261,7 +261,7 @@ export default function ChatInput({ activeUser, uploading, fileInputRef, onPaper
                 <button
                     onClick={onSendMessage}
                     disabled={!activeUser || uploading || !message.trim()}
-                    className={`p-2 rounded-full transition-all ${!activeUser || uploading || !message.trim()
+                    className={`cursor-pointer p-2 rounded-full transition-all ${!activeUser || uploading || !message.trim()
                         ? isDark
                             ? 'text-gray-600 cursor-not-allowed bg-gray-700'
                             : 'text-gray-400 cursor-not-allowed bg-gray-100'
