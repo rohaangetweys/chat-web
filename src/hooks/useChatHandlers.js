@@ -9,12 +9,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
     const { activeUser, setActiveUser, activeChatType, setActiveChatType, chat, setChat, uploading, setUploading, modalContent, modalType, isMobileView, showVoiceRecorder, setShowVoiceRecorder, showFileTypeModal, setShowFileTypeModal, unreadCounts, setUnreadCounts, blockedUsers, setBlockedUsers, clearedChats, setClearedChats, fileInputRef, openMediaModal, closeMediaModal, setActiveUserHandler, markMessagesAsRead } = useChatStateAndListeners({ username, users, groups, setShowSidebar });
 
     const callRefRef = useRef(null);
-    const refreshPage = useCallback(() => {
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
-    }, []);
-
+    
     const sendCallInvitation = useCallback(async (toUser, type = 'audio') => {
         if (!username || !toUser) return;
 
@@ -98,7 +93,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                     toast.error('Call rejected');
 
                     const currentUserCallRef = ref(db, `calls/${username}`);
-                    remove(currentUserCallRef);                    
+                    remove(currentUserCallRef);
                 }
 
                 if (callData.status === 'ended' && (callState.isActiveCall || callState.isOutgoingCall || callState.isIncomingCall)) {
@@ -114,8 +109,6 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
 
                     const currentUserCallRef = ref(db, `calls/${username}`);
                     remove(currentUserCallRef);
-                    
-                    refreshPage();
                 }
             }
         }, (error) => {
@@ -127,7 +120,7 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
                 off(callRefRef.current);
             }
         };
-    }, [username, callState, setCallState, refreshPage]);
+    }, [username, callState, setCallState]);
 
     const sendCallResponse = useCallback(async (toUser, response, callId) => {
         if (!username || !toUser || !callId) return;
@@ -166,12 +159,10 @@ export default function useChatHandlers({ username, users, groups, setShowSideba
             await remove(currentUserCallRef);
 
             console.log('Call ended for both users');
-            
-            refreshPage();
         } catch (error) {
             console.error('Error ending call:', error);
         }
-    }, [username, refreshPage]);
+    }, [username]);
 
     const blockUser = async (userId) => {
         if (!username || !userId) {

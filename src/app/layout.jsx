@@ -11,6 +11,9 @@ const poppins = Inter({
 export const metadata = {
   title: "Chat App",
   description: "By Rohaan",
+  icons: {
+    icon: "/logo/logo.png",
+  }
 };
 
 export default function RootLayout({ children }) {

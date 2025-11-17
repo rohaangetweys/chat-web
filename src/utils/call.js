@@ -19,7 +19,7 @@ export const handleMediaError = (error, mediaType = 'camera') => {
     if (mediaType === 'audio') return handleAudioError(error);
     
     if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        return 'Camera not found. Please check your camera connection.';
+        return 'Required Device not found.';
     } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
         return 'Camera is already in use by another application.';
     } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {

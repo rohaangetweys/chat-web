@@ -4,9 +4,9 @@ import { ref, remove, set, onValue, off } from 'firebase/database';
 import { db } from '@/lib/firebaseConfig';
 import { useTheme } from '@/contexts/ThemeContext';
 import { FaPhone, FaPhoneSlash } from 'react-icons/fa';
-import { toast } from 'react-hot-toast';
 import Peer from 'peerjs';
 import { formatDuration, getProfilePhoto, getCallStatusText, handleMediaError, startCallTimer, cleanupCall } from '@/utils/call';
+import toast from 'react-hot-toast';
 
 export default function AudioCall({ callState, onCallEnd, onCallAccept, onCallReject, username, userProfiles, setCallState }) {
     const [localStream, setLocalStream] = useState(null);

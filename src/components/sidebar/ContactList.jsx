@@ -139,10 +139,10 @@ function ContactItem({ contact, activeUser, activeChatType, onUserClick, onGroup
                     {isBlocked && (
                         <button
                             onClick={handleBlockAction}
-                            className="shrink-0 ml-1 p-1 text-green-500 hover:bg-green-50 rounded-full transition-colors"
+                            className="text-xs border-green-400 border bg-green-100 cursor-pointer shrink-0 ml-1 p-1 text-green-500 hover:bg-green-50 rounded-full transition-colors"
                             title="Unblock user"
                         >
-                            <FaCheck size={10} />
+                            <p>unblock</p>
                         </button>
                     )}
                 </div>
